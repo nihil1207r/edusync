@@ -118,7 +118,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => {
                   setEmail(acc.email);
-                  setPassword(acc.password);
+                  setPssword(acc.password);
                 }}
                 className="w-full flex items-center justify-between text-left px-2 py-1.5 rounded hover:bg-paper transition-colors"
               >
