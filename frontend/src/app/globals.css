@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+/*
+  Palette — five given colors only, everything else (soft text, hairlines,
+  danger state) derived from these via color-mix() rather than inventing
+  new hex values.
+    #646536  Olive Leaf     -> success / positive tone
+    #A53F2B  Burnt Brick    -> primary accent (buttons, highlights)
+    #020100  Jet Black      -> ink / primary text
+    #CFD2B2  Sage Mist      -> paper / page background
+    #E0D8DE  Misty Lavender -> raised surface (cards) + text-on-accent
+*/
+:root {
+  --paper: #cfd2b2;
+  --paper-raised: #e0d8de;
+  --ink: #020100;
+  --ink-soft: color-mix(in srgb, var(--ink) 55%, var(--paper));
+  --accent: #a53f2b;
+  --accent-ink: #e0d8de;
+  --leaf: #646536;
+  --brick: color-mix(in srgb, var(--accent) 75%, var(--ink));
+  --line: color-mix(in srgb, var(--ink) 18%, var(--paper));
+
+  --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", "IBM Plex Mono", Menlo, Consolas, monospace;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-leaf: var(--leaf);
+  --color-brick: var(--brick);
+  --color-line: var(--line);
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+/* Signature: a double hairline "ledger rule" used to divide sections,
+   with a small accent tick where a new entry begins. */
+.ledger-rule {
+  position: relative;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  height: 4px;
+  margin: 0.25rem 0;
+}
+.ledger-rule::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 28px;
+  height: 6px;
+  background: var(--accent);
+}
+
+/* Signature: a circular "stamp" badge for grades, like a mark in a report card. */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  transform: rotate(-4deg);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
