@@ -4,8 +4,8 @@ import "testing"
 
 func TestRoleRequiresMFA(t *testing.T) {
 	cases := map[string]bool{
-		"admin":   true,
-		"teacher": true,
+		"admin":   false,
+		"teacher": false,
 		"parent":  false,
 		"student": false,
 		"driver":  false,

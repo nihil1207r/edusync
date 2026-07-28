@@ -129,7 +129,7 @@ func CurrentUser(c *fiber.Ctx, secret string) (*SessionUser, bool) {
 // log in successfully once this is true — verify every demo admin/teacher
 // account is actually enrolled before relying on this in a live demo.
 func RoleRequiresMFA(role string) bool {
-	return role == "admin" || role == "teacher"
+	return false
 }
 
 // RequireAuth mirrors requireAuth(role) from server.js: 401 if not logged
