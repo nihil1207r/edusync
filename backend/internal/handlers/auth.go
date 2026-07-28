@@ -43,7 +43,7 @@ func (d *Deps) UserDB(c *fiber.Ctx) *supabase.Client {
 			user.SupabaseAccessToken = sess.AccessToken
 			user.SupabaseRefreshToken = sess.RefreshToken
 			user.SupabaseExpiresAt = time.Now().Add(time.Duration(sess.ExpiresIn) * time.Second).Unix()
-			_ = middleware.IssueSession(c, d.Secret, *user)
+			_ = middleware.IssueSession(c, d.Secret, *user, d.IsProduction)
 			c.Locals("user", user)
 		}
 		// If refresh fails, fall through and let PostgREST reject the stale
@@ -97,7 +97,7 @@ func (d *Deps) Login(c *fiber.Ctx) error {
 		SupabaseExpiresAt:    time.Now().Add(time.Duration(session.ExpiresIn) * time.Second).Unix(),
 		MFAVerified:          !middleware.RoleRequiresMFA(profile.Role), // parent/student/driver: n/a, treated as satisfied
 	}
-	if err := middleware.IssueSession(c, d.Secret, sessionUser); err != nil {
+	if err := middleware.IssueSession(c, d.Secret, sessionUser, d.IsProduction); err != nil {
 		return c.JSON(fiber.Map{"success": false, "message": "Server error."})
 	}
 
@@ -128,7 +128,7 @@ func (d *Deps) Login(c *fiber.Ctx) error {
 }
 
 func (d *Deps) Logout(c *fiber.Ctx) error {
-	middleware.ClearSession(c)
+	middleware.ClearSession(c, d.IsProduction)
 	return c.JSON(fiber.Map{"success": true})
 }
 

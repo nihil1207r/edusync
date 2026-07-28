@@ -63,7 +63,7 @@ func (d *Deps) MFAEnrollConfirm(c *fiber.Ctx) error {
 	user.SupabaseRefreshToken = session.RefreshToken
 	user.SupabaseExpiresAt = time.Now().Add(time.Duration(session.ExpiresIn) * time.Second).Unix()
 	user.MFAVerified = true
-	if err := middleware.IssueSession(c, d.Secret, *user); err != nil {
+	if err := middleware.IssueSession(c, d.Secret, *user, d.IsProduction); err != nil {
 		return c.JSON(fiber.Map{"success": false, "message": "Server error."})
 	}
 
@@ -94,7 +94,7 @@ func (d *Deps) MFAVerifyLogin(c *fiber.Ctx) error {
 	user.SupabaseRefreshToken = session.RefreshToken
 	user.SupabaseExpiresAt = time.Now().Add(time.Duration(session.ExpiresIn) * time.Second).Unix()
 	user.MFAVerified = true
-	if err := middleware.IssueSession(c, d.Secret, *user); err != nil {
+	if err := middleware.IssueSession(c, d.Secret, *user, d.IsProduction); err != nil {
 		return c.JSON(fiber.Map{"success": false, "message": "Server error."})
 	}
 

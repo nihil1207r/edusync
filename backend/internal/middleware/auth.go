@@ -49,7 +49,19 @@ type sessionClaims struct {
 // closed, rather than persisting it to disk. The JWT itself still carries
 // its own sessionTTL expiry (checked in CurrentUser) as a server-side
 // backstop for however long the browser happens to keep the cookie around.
-func IssueSession(c *fiber.Ctx, secret string, user SessionUser) error {
+//
+// isProduction controls SameSite/Secure:
+//   - true  (real deploy, e.g. Vercel frontend + Render backend): the
+//     frontend and backend are different origins, so this is a cross-site
+//     request from the browser's point of view. SameSite=Lax would
+//     silently withhold the cookie on those cross-site fetch() calls —
+//     login looks like it succeeds (the Set-Cookie response arrives fine)
+//     but every request after that reads no cookie at all. SameSite=None
+//     fixes that, but None requires Secure, which in turn requires HTTPS.
+//   - false (local dev, plain http://localhost): Secure cookies are
+//     dropped outright by the browser over plain HTTP, so this falls back
+//     to SameSite=Lax without Secure, matching same-origin local dev.
+func IssueSession(c *fiber.Ctx, secret string, user SessionUser, isProduction bool) error {
 	claims := sessionClaims{
 		User: user,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -61,24 +73,38 @@ func IssueSession(c *fiber.Ctx, secret string, user SessionUser) error {
 	if err != nil {
 		return err
 	}
-	c.Cookie(&fiber.Cookie{
+	cookie := &fiber.Cookie{
 		Name:     CookieName,
 		Value:    signed,
 		HTTPOnly: true,
-		SameSite: "Lax",
-	})
+	}
+	if isProduction {
+		cookie.SameSite = "None"
+		cookie.Secure = true
+	} else {
+		cookie.SameSite = "Lax"
+	}
+	c.Cookie(cookie)
 	return nil
 }
 
-// ClearSession removes the session cookie.
-func ClearSession(c *fiber.Ctx) {
-	c.Cookie(&fiber.Cookie{
+// ClearSession removes the session cookie. Must use the same
+// SameSite/Secure attributes IssueSession used to set it, or the browser
+// treats it as a different cookie and won't actually clear the real one.
+func ClearSession(c *fiber.Ctx, isProduction bool) {
+	cookie := &fiber.Cookie{
 		Name:     CookieName,
 		Value:    "",
 		HTTPOnly: true,
-		SameSite: "Lax",
 		MaxAge:   -1,
-	})
+	}
+	if isProduction {
+		cookie.SameSite = "None"
+		cookie.Secure = true
+	} else {
+		cookie.SameSite = "Lax"
+	}
+	c.Cookie(cookie)
 }
 
 // CurrentUser reads and validates the session cookie, if present.
