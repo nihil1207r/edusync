@@ -98,12 +98,12 @@ func CurrentUser(c *fiber.Ctx, secret string) (*SessionUser, bool) {
 }
 
 // RoleRequiresMFA reports whether a role must complete a second factor
-// before being trusted with anything beyond login. Two-factor auth has
-// been disabled for all roles — this always returns false, which also
-// makes /auth/mfa/enroll, /auth/mfa/enroll/confirm, and /auth/mfa/verify
-// no-ops (they short-circuit with "MFA is not required for this role").
+// before being trusted with anything beyond login. Admin and teacher
+// accounts must be TOTP-enrolled (see /auth/mfa/enroll) before they can
+// log in successfully once this is true — verify every demo admin/teacher
+// account is actually enrolled before relying on this in a live demo.
 func RoleRequiresMFA(role string) bool {
-	return false
+	return role == "admin" || role == "teacher"
 }
 
 // RequireAuth mirrors requireAuth(role) from server.js: 401 if not logged

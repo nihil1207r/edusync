@@ -1,0 +1,29 @@
+package middleware
+
+import "testing"
+
+// RoleRequiresMFA is intentionally hardcoded to false for every role in
+// this demo build (see the doc comment on RoleRequiresMFA in auth.go) so
+// judges/reviewers can log into admin/teacher accounts without a TOTP step
+// mid-demo. The enrollment/verification code path itself is real and
+// exercised elsewhere — this only covers whether it's *required* to pass
+// RequireAuth. To re-enable enforcement for a real deployment, change
+// RoleRequiresMFA to `return role == "admin" || role == "teacher"` and
+// restore the cases below to `true` for those two roles — then make sure
+// every admin/teacher account is actually TOTP-enrolled before shipping,
+// or logins for those roles will start failing.
+func TestRoleRequiresMFA(t *testing.T) {
+	cases := map[string]bool{
+		"admin":   false,
+		"teacher": false,
+		"parent":  false,
+		"student": false,
+		"driver":  false,
+		"":        false,
+	}
+	for role, want := range cases {
+		if got := RoleRequiresMFA(role); got != want {
+			t.Errorf("RoleRequiresMFA(%q) = %v, want %v", role, got, want)
+		}
+	}
+}
