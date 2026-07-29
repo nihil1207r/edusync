@@ -37,6 +37,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Hides the floating dev-mode indicator badge Next.js overlays in the
+  // bottom corner during `next dev` — it's a framework dev tool, not part
+  // of the app's own UI, and has no effect on production builds either way.
+  devIndicators: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
