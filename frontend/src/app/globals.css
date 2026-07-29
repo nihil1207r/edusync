@@ -7,10 +7,12 @@
   The subject is a school register: a bound ledger of attendance marks,
   grade entries and wax-stamped approvals. Day mode reads like that ledger
   open on a desk in daylight — stone paper, ivory leaves, a brass seal for
-  emphasis. Night mode reads like the same book by lamplight — the paper
-  goes to ink, the brass turns to warm candle-gold, the moss deepens.
-  Every other surface in the app is built from these tokens; nothing is
-  hard-coded so the whole product repaints between editions at once.
+  emphasis. Night mode trades the paper-and-wax metaphor for the brand
+  mark's own light: near-black paper, and an aurora-cyan accent lifted
+  straight from the EduNexus logo, like the emblem glowing on a dark
+  screen. Every other surface in the app is built from these tokens;
+  nothing is hard-coded so the whole product repaints between editions
+  at once.
 */
 :root {
   --paper: #d9d4c2;
@@ -34,11 +36,11 @@
 
 .dark {
   --paper: #14140f;
-  --paper-raised: #211f17;
+  --paper-raised: #1c1f1f;
   --ink: #ece5d3;
   --ink-soft: color-mix(in srgb, var(--ink) 55%, var(--paper));
-  --accent: #d0a53d;
-  --accent-ink: #1a1608;
+  --accent: #34b3e0;
+  --accent-ink: #06131c;
   --leaf: #93a26a;
   --brick: #d97f65;
   --line: color-mix(in srgb, var(--ink) 18%, var(--paper));
@@ -156,6 +158,26 @@ body::before {
 }
 .shadow-raised {
   box-shadow: var(--shadow-raised);
+}
+
+/* A restrained glow behind the brand mark — scoped tightly to the logo
+   itself rather than a big ambient blob, so it reads as a lit emblem
+   rather than a generic gradient background. */
+.brand-glow {
+  position: relative;
+}
+.brand-glow::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  z-index: -1;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 55%, transparent) 0%, transparent 70%);
+  opacity: 0.35;
+  filter: blur(6px);
+}
+.dark .brand-glow::before {
+  opacity: 0.55;
+  filter: blur(10px);
 }
 
 /* Focus ring used across the app instead of the default blue browser ring */

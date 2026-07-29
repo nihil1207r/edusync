@@ -5,6 +5,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "EduNexus",
   description: "School management platform",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 // Runs before paint so switching editions never flashes the wrong palette.

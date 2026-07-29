@@ -70,8 +70,10 @@ export default function LoginPage() {
       </div>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8 flex flex-col items-center">
-          <span className="stamp !w-14 !h-14 !text-lg text-accent border-accent/70 mb-3">EN</span>
-          <p className="font-serif text-3xl text-ink tracking-tight">EduNexus</p>
+          <span className="brand-glow inline-flex">
+            <img src="/brand/logo-icon.png" alt="EduNexus" className="w-20 h-20 object-contain" />
+          </span>
+          <p className="font-serif text-3xl text-ink tracking-tight mt-2">EduNexus</p>
           <p className="text-sm text-ink-soft mt-1">Sign in to your school account</p>
         </div>
 

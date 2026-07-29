@@ -89,7 +89,9 @@ export default function AppShell({
           } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
         >
           <div className="flex items-center gap-3 px-4 h-[68px] shrink-0 border-b border-line">
-            <span className="stamp shrink-0 !w-9 !h-9 !text-[13px] text-accent border-accent/70">EN</span>
+            <span className="brand-glow shrink-0 flex items-center justify-center w-9 h-9">
+              <img src="/brand/logo-icon.png" alt="EduNexus" className="w-9 h-9 object-contain" />
+            </span>
             <div className={`overflow-hidden whitespace-nowrap transition-all duration-150 ${expanded ? "opacity-100 max-w-[160px]" : "opacity-100 max-w-[160px] md:opacity-0 md:max-w-0"}`}>
               <p className="font-serif text-lg leading-none text-ink">EduNexus</p>
               <p className="text-[11px] text-ink-soft mt-0.5">Ledger edition</p>
@@ -144,9 +146,16 @@ export default function AppShell({
                 <MenuIcon open={mobileOpen} />
               </button>
             )}
-            <div className="min-w-0">
-              {!hasNav && <p className="font-serif text-lg leading-none text-ink">EduNexus</p>}
-              <p className="text-sm sm:text-[15px] font-medium text-ink truncate mt-0.5">{title}</p>
+            <div className="min-w-0 flex items-center gap-2.5">
+              {!hasNav && (
+                <span className="brand-glow shrink-0 flex items-center justify-center w-7 h-7">
+                  <img src="/brand/logo-icon.png" alt="EduNexus" className="w-7 h-7 object-contain" />
+                </span>
+              )}
+              <div className="min-w-0">
+                {!hasNav && <p className="font-serif text-lg leading-none text-ink">EduNexus</p>}
+                <p className="text-sm sm:text-[15px] font-medium text-ink truncate mt-0.5">{title}</p>
+              </div>
             </div>
             <div className="ml-auto flex items-center gap-2 sm:gap-3 shrink-0">
               <ThemeToggle />
