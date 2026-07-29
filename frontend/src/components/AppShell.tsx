@@ -7,6 +7,7 @@ import { clearSessionActive } from "@/lib/session";
 import type { SessionUser } from "@/lib/types";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Icon, MenuIcon, LogOutIcon, type IconName } from "@/components/Icons";
+import { spotlightStyle } from "@/lib/interactive";
 
 const ROLE_LABEL: Record<string, string> = {
   teacher: "Teacher",
@@ -89,7 +90,7 @@ export default function AppShell({
           } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
         >
           <div className="flex items-center gap-3 px-4 h-[68px] shrink-0 border-b border-line">
-            <span className="brand-glow shrink-0 flex items-center justify-center w-9 h-9">
+            <span className="brand-glow shrink-0 flex items-center justify-center w-9 h-9 transition-transform duration-200 hover:scale-110">
               <img src="/brand/logo-icon.png" alt="EduNexus" className="w-9 h-9 object-contain" />
             </span>
             <div className={`overflow-hidden whitespace-nowrap transition-all duration-150 ${expanded ? "opacity-100 max-w-[160px]" : "opacity-100 max-w-[160px] md:opacity-0 md:max-w-0"}`}>
@@ -99,31 +100,15 @@ export default function AppShell({
           </div>
 
           <nav className="flex-1 overflow-y-auto py-3 px-2.5 space-y-0.5">
-            {tabs!.map((tab) => {
-              const isActive = tab.id === activeTab;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => selectTab(tab.id)}
-                  title={tab.label}
-                  aria-current={isActive ? "page" : undefined}
-                  className={`focus-ring group w-full flex items-center rounded-lg pl-3 pr-2.5 py-2.5 text-left transition-colors ${
-                    isActive
-                      ? "bg-paper text-ink shadow-card border-l-[3px] border-accent -ml-px pl-[11px]"
-                      : "text-ink-soft hover:bg-paper/60 hover:text-ink border-l-[3px] border-transparent"
-                  }`}
-                >
-                  <Icon name={tab.icon ?? "generic"} className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-accent" : ""}`} />
-                  <span
-                    className={`overflow-hidden whitespace-nowrap transition-all duration-150 text-sm ml-3 ${
-                      expanded ? "opacity-100 max-w-[160px]" : "opacity-100 max-w-[160px] md:opacity-0 md:max-w-0 md:ml-0"
-                    }`}
-                  >
-                    {tab.label}
-                  </span>
-                </button>
-              );
-            })}
+            {tabs!.map((tab) => (
+              <NavItem
+                key={tab.id}
+                tab={tab}
+                isActive={tab.id === activeTab}
+                expanded={expanded}
+                onSelect={selectTab}
+              />
+            ))}
           </nav>
 
           <div className="ledger-rule mx-4" />
@@ -141,14 +126,14 @@ export default function AppShell({
                 onClick={toggleNav}
                 aria-label={expanded || mobileOpen ? "Collapse navigation" : "Expand navigation"}
                 title={expanded || mobileOpen ? "Collapse navigation" : "Expand navigation"}
-                className="focus-ring flex items-center justify-center w-9 h-9 rounded-full text-ink-soft hover:text-ink hover:bg-paper transition-colors shrink-0"
+                className="focus-ring flex items-center justify-center w-9 h-9 rounded-full text-ink-soft hover:text-ink hover:bg-paper transition-all duration-150 hover:scale-105 active:scale-95 shrink-0"
               >
                 <MenuIcon open={mobileOpen} />
               </button>
             )}
             <div className="min-w-0 flex items-center gap-2.5">
               {!hasNav && (
-                <span className="brand-glow shrink-0 flex items-center justify-center w-7 h-7">
+                <span className="brand-glow shrink-0 flex items-center justify-center w-7 h-7 transition-transform duration-200 hover:scale-110">
                   <img src="/brand/logo-icon.png" alt="EduNexus" className="w-7 h-7 object-contain" />
                 </span>
               )}
@@ -165,7 +150,7 @@ export default function AppShell({
               </div>
               <button
                 onClick={handleLogout}
-                className="focus-ring flex items-center gap-1.5 text-sm px-3 py-1.5 border border-line rounded-full hover:bg-paper hover:border-accent/40 transition-colors text-ink-soft hover:text-ink"
+                className="focus-ring flex items-center gap-1.5 text-sm px-3 py-1.5 border border-line rounded-full hover:bg-paper hover:border-accent/40 transition-all duration-150 text-ink-soft hover:text-ink hover:scale-105 active:scale-95"
               >
                 <LogOutIcon />
                 <span className="hidden sm:inline">Log out</span>
@@ -176,5 +161,56 @@ export default function AppShell({
         <main className="flex-1 w-full px-4 sm:px-6 py-6 sm:py-8 max-w-[1400px] mx-auto">{children}</main>
       </div>
     </div>
+  );
+}
+
+function NavItem({
+  tab,
+  isActive,
+  expanded,
+  onSelect,
+}: {
+  tab: ShellTab;
+  isActive: boolean;
+  expanded: boolean;
+  onSelect: (id: string) => void;
+}) {
+  const [spot, setSpot] = useState<React.CSSProperties>({});
+
+  return (
+    <button
+      onClick={() => onSelect(tab.id)}
+      onMouseMove={(e) => setSpot(spotlightStyle(e))}
+      onMouseLeave={() => setSpot({})}
+      style={spot}
+      title={tab.label}
+      aria-current={isActive ? "page" : undefined}
+      className={`group relative w-full flex items-center overflow-hidden rounded-lg pl-3 pr-2.5 py-2.5 text-left transition-all duration-150 focus-ring ${
+        isActive
+          ? "bg-paper text-ink shadow-card border-l-[3px] border-accent -ml-px pl-[11px]"
+          : "text-ink-soft hover:text-ink hover:translate-x-0.5 border-l-[3px] border-transparent"
+      }`}
+    >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        style={{
+          background: isActive
+            ? undefined
+            : "radial-gradient(160px circle at var(--spot-x, 50%) var(--spot-y, 50%), color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%)",
+        }}
+      />
+      <Icon
+        name={tab.icon ?? "generic"}
+        className={`relative w-[18px] h-[18px] shrink-0 transition-transform duration-150 group-hover:scale-110 ${isActive ? "text-accent" : ""}`}
+      />
+      <span
+        className={`relative overflow-hidden whitespace-nowrap transition-all duration-150 text-sm ml-3 ${
+          expanded ? "opacity-100 max-w-[160px]" : "opacity-100 max-w-[160px] md:opacity-0 md:max-w-0 md:ml-0"
+        }`}
+      >
+        {tab.label}
+      </span>
+    </button>
   );
 }

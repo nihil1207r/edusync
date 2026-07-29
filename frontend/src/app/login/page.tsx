@@ -7,6 +7,7 @@ import { Button } from "@/components/ui";
 import ThemeToggle from "@/components/ThemeToggle";
 import { hasActiveTabSession, markSessionActive } from "@/lib/session";
 import type { MeResponse } from "@/lib/types";
+import { tiltStyle, resetTiltStyle } from "@/lib/interactive";
 
 const DEMO_ACCOUNTS = [
   { role: "Teacher", email: "priya@edunexus.com", password: "teacher123" },
@@ -28,6 +29,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [cardStyle, setCardStyle] = useState<React.CSSProperties>({});
 
   useEffect(() => {
     // Only trust an existing session if THIS tab is the one that created it
@@ -70,15 +72,29 @@ export default function LoginPage() {
       </div>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8 flex flex-col items-center">
-          <span className="brand-glow inline-flex">
+          <span className="brand-glow inline-flex transition-transform duration-200 hover:scale-105">
             <img src="/brand/logo-icon.png" alt="EduNexus" className="w-20 h-20 object-contain" />
           </span>
           <p className="font-serif text-3xl text-ink tracking-tight mt-2">EduNexus</p>
           <p className="text-sm text-ink-soft mt-1">Sign in to your school account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-paper-raised border border-line rounded-xl p-6 space-y-4 shadow-raised">
-          <div>
+        <form
+          onSubmit={handleSubmit}
+          onMouseMove={(e) => setCardStyle(tiltStyle(e, 4))}
+          onMouseLeave={() => setCardStyle(resetTiltStyle())}
+          style={{ transition: "transform 150ms ease-out", willChange: "transform", ...cardStyle }}
+          className="group/login relative overflow-hidden bg-paper-raised border border-line rounded-xl p-6 space-y-4 shadow-raised"
+        >
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-0 group-hover/login:opacity-100 transition-opacity duration-300"
+            style={{
+              background:
+                "radial-gradient(360px circle at var(--spot-x, 50%) var(--spot-y, 50%), color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%)",
+            }}
+          />
+          <div className="relative">
             <label className="block text-xs uppercase tracking-wide text-ink-soft mb-1">
               Email address
             </label>
@@ -89,10 +105,10 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
-              className="focus-ring w-full border border-line rounded-lg px-3 py-2 bg-paper text-ink"
+              className="focus-ring w-full border border-line rounded-lg px-3 py-2 bg-paper text-ink transition-shadow focus:shadow-card"
             />
           </div>
-          <div>
+          <div className="relative">
             <label className="block text-xs uppercase tracking-wide text-ink-soft mb-1">
               Password
             </label>
@@ -103,15 +119,17 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
-              className="focus-ring w-full border border-line rounded-lg px-3 py-2 bg-paper text-ink"
+              className="focus-ring w-full border border-line rounded-lg px-3 py-2 bg-paper text-ink transition-shadow focus:shadow-card"
             />
           </div>
 
-          {error && <p className="text-sm text-brick">{error}</p>}
+          {error && <p className="relative text-sm text-brick">{error}</p>}
 
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Signing in…" : "Sign in"}
-          </Button>
+          <div className="relative">
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Signing in…" : "Sign in"}
+            </Button>
+          </div>
         </form>
 
         <div className="mt-6 bg-paper-raised border border-line rounded-xl p-4 shadow-card">
@@ -127,7 +145,7 @@ export default function LoginPage() {
                   setEmail(acc.email);
                   setPassword(acc.password);
                 }}
-                className="focus-ring w-full flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg hover:bg-paper transition-colors"
+                className="focus-ring w-full flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg hover:bg-paper hover:translate-x-0.5 transition-all duration-150"
               >
                 <span className="text-sm font-medium text-ink">{acc.role}</span>
                 <span className="text-xs font-mono text-ink-soft">{acc.email}</span>
