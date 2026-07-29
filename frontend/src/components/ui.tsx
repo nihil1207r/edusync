@@ -220,11 +220,19 @@ export function AIHighlightBanner({
 
 export function LoadingState() {
   return (
-    <div className="flex items-center justify-center gap-2 text-ink-soft text-sm py-16">
-      <span className="w-1.5 h-1.5 rounded-full bg-ink-soft animate-bounce [animation-delay:-0.2s]" />
-      <span className="w-1.5 h-1.5 rounded-full bg-ink-soft animate-bounce" />
-      <span className="w-1.5 h-1.5 rounded-full bg-ink-soft animate-bounce [animation-delay:0.2s]" />
-      <span className="ml-1">Loading…</span>
+    <div className="py-10 space-y-3" role="status" aria-label="Loading">
+      {[100, 88, 94, 70].map((w, i) => (
+        <div key={i} className="h-3 rounded-full bg-line/60 overflow-hidden" style={{ width: `${w}%` }}>
+          <div
+            className="h-full w-1/3 rounded-full"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 35%, transparent), transparent)",
+              animation: `shimmer 1.4s ease-in-out ${i * 0.12}s infinite`,
+            }}
+          />
+        </div>
+      ))}
     </div>
   );
 }

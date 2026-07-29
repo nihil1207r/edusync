@@ -105,7 +105,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
-              className="focus-ring w-full border border-line rounded-lg px-3 py-2 bg-paper text-ink transition-shadow focus:shadow-card"
+              className="input-premium w-full border border-line rounded-lg px-3 py-2 bg-paper text-ink"
             />
           </div>
           <div className="relative">
@@ -119,7 +119,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
-              className="focus-ring w-full border border-line rounded-lg px-3 py-2 bg-paper text-ink transition-shadow focus:shadow-card"
+              className="input-premium w-full border border-line rounded-lg px-3 py-2 bg-paper text-ink"
             />
           </div>
 
