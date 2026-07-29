@@ -8,7 +8,7 @@ import type { SkillNode } from "@/lib/types";
 const STATUS_STYLE: Record<SkillNode["status"], string> = {
   mastered: "bg-leaf/20 border-leaf text-leaf",
   cleared: "bg-paper-raised border-line text-ink",
-  current: "bg-accent/20 border-accent text-accent-ink",
+  current: "bg-accent/15 border-accent text-accent",
   locked: "bg-paper border-line text-ink-soft opacity-60",
 };
 

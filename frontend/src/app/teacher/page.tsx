@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuthGuard } from "@/lib/useAuthGuard";
 import { apiGet, apiPost } from "@/lib/api";
-import AppShell from "@/components/AppShell";
-import { TabNav } from "@/components/TabNav";
+import AppShell, { type ShellTab } from "@/components/AppShell";
 import { Card, SectionTitle, StatCard, Pill, Button, LoadingState, ErrorState, AIHighlightBanner } from "@/components/ui";
 import type { Student, Announcement, Homework, Gatepass, Wellness, ChatMessage, LeaveRequest, SilentStudentFlag } from "@/lib/types";
 import InboxTab from "@/components/InboxTab";
@@ -16,26 +15,26 @@ import FriendshipTab from "@/components/FriendshipTab";
 import SchoolMemoryTab from "@/components/SchoolMemoryTab";
 import MeetingPrepTab from "@/components/MeetingPrepTab";
 
-const TABS = [
-  { id: "dashboard", label: "Dashboard" },
-  { id: "friendship", label: "Friendship Intelligence" },
-  { id: "classenergy", label: "Classroom Energy" },
-  { id: "meetingprep", label: "Meeting Prep" },
-  { id: "schoolmemory", label: "School Memory" },
-  { id: "flags", label: "Check-in Flags" },
-  { id: "inbox", label: "Inbox" },
-  { id: "students", label: "Students" },
-  { id: "attendance", label: "Attendance" },
-  { id: "homework", label: "Homework" },
-  { id: "announcements", label: "Announcements" },
-  { id: "gatepasses", label: "Gate Passes" },
-  { id: "leave", label: "Leave Requests" },
-  { id: "wellness", label: "Wellness" },
-  { id: "chat", label: "Chat" },
-  { id: "exams", label: "Exams & Results" },
-  { id: "timetable", label: "Timetable" },
-  { id: "documents", label: "Documents" },
-  { id: "sos", label: "Bus SOS" },
+const TABS: ShellTab[] = [
+  { id: "dashboard", label: "Dashboard", icon: "dashboard" },
+  { id: "friendship", label: "Friendship Intelligence", icon: "sparkles" },
+  { id: "classenergy", label: "Classroom Energy", icon: "pulse" },
+  { id: "meetingprep", label: "Meeting Prep", icon: "notes" },
+  { id: "schoolmemory", label: "School Memory", icon: "archive" },
+  { id: "flags", label: "Check-in Flags", icon: "flag" },
+  { id: "inbox", label: "Inbox", icon: "inbox" },
+  { id: "students", label: "Students", icon: "users" },
+  { id: "attendance", label: "Attendance", icon: "calendarCheck" },
+  { id: "homework", label: "Homework", icon: "bookOpen" },
+  { id: "announcements", label: "Announcements", icon: "megaphone" },
+  { id: "gatepasses", label: "Gate Passes", icon: "doorOpen" },
+  { id: "leave", label: "Leave Requests", icon: "fileCheck" },
+  { id: "wellness", label: "Wellness", icon: "heart" },
+  { id: "chat", label: "Chat", icon: "chat" },
+  { id: "exams", label: "Exams & Results", icon: "examPaper" },
+  { id: "timetable", label: "Timetable", icon: "clock" },
+  { id: "documents", label: "Documents", icon: "folder" },
+  { id: "sos", label: "Bus SOS", icon: "busAlert" },
 ];
 
 interface DashboardData {
@@ -60,8 +59,7 @@ export default function TeacherPage() {
   if (checking || !user) return <LoadingState />;
 
   return (
-    <AppShell user={user} title="Teacher dashboard — Class 10A">
-      <TabNav tabs={TABS} active={tab} onChange={setTab} />
+    <AppShell user={user} title="Teacher dashboard — Class 10A" tabs={TABS} activeTab={tab} onTabChange={setTab}>
       {tab === "dashboard" && <DashboardTab data={dashboard} onOpenFriendship={() => setTab("friendship")} />}
       {tab === "inbox" && <InboxTab />}
       {tab === "students" && <StudentsTab />}

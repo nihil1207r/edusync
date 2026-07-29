@@ -63,10 +63,10 @@ export default function DailySummaryCard() {
       </p>
 
       <div className="flex items-center gap-3 mt-3">
-        <button onClick={listen} disabled={speaking} className="text-xs text-accent-ink underline underline-offset-2 hover:no-underline disabled:opacity-50">
+        <button onClick={listen} disabled={speaking} className="text-xs text-accent underline underline-offset-2 hover:no-underline disabled:opacity-50">
           {speaking ? "Speaking…" : "Listen"}
         </button>
-        <button onClick={toggleDetail} className="text-xs text-accent-ink underline underline-offset-2 hover:no-underline">
+        <button onClick={toggleDetail} className="text-xs text-accent underline underline-offset-2 hover:no-underline">
           {showDetail ? "Show less" : "Show the numbers behind this"}
         </button>
       </div>

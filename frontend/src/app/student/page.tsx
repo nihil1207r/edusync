@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuthGuard } from "@/lib/useAuthGuard";
 import { apiGet, apiPost } from "@/lib/api";
-import AppShell from "@/components/AppShell";
-import { TabNav } from "@/components/TabNav";
+import AppShell, { type ShellTab } from "@/components/AppShell";
 import { Card, SectionTitle, StatCard, Stamp, Pill, Button, LoadingState, ErrorState, AIHighlightBanner } from "@/components/ui";
 import DailySummaryCard from "@/components/DailySummaryCard";
 import FeesTab from "@/components/FeesTab";
@@ -20,26 +19,26 @@ import MeetingPrepView from "@/components/MeetingPrepView";
 import GamificationTab from "@/components/AchievementsTab";
 import SkillTreeTab from "@/components/SkillTreeTab";
 
-const TABS = [
-  { id: "dashboard", label: "Dashboard" },
-  { id: "mastery", label: "Knowledge Journey" },
-  { id: "memory", label: "School Memory" },
-  { id: "meetingprep", label: "Meeting Prep" },
-  { id: "inbox", label: "Inbox" },
-  { id: "bus", label: "My Bus" },
-  { id: "grades", label: "My Grades" },
-  { id: "timetable", label: "Timetable" },
-  { id: "exams", label: "Exams & Results" },
-  { id: "documents", label: "Documents" },
-  { id: "homework", label: "Homework" },
-  { id: "attendance", label: "Attendance" },
-  { id: "wellness", label: "Wellness" },
-  { id: "gatepass", label: "Gate Pass" },
-  { id: "leave", label: "Leave" },
-  { id: "announcements", label: "Announcements" },
-  { id: "fees", label: "Fees" },
-  { id: "skilltree", label: "Skill Tree" },
-  { id: "achievements", label: "Achievements" },
+const TABS: ShellTab[] = [
+  { id: "dashboard", label: "Dashboard", icon: "dashboard" },
+  { id: "mastery", label: "Knowledge Journey", icon: "target" },
+  { id: "memory", label: "School Memory", icon: "archive" },
+  { id: "meetingprep", label: "Meeting Prep", icon: "notes" },
+  { id: "inbox", label: "Inbox", icon: "inbox" },
+  { id: "bus", label: "My Bus", icon: "bus" },
+  { id: "grades", label: "My Grades", icon: "grade" },
+  { id: "timetable", label: "Timetable", icon: "clock" },
+  { id: "exams", label: "Exams & Results", icon: "examPaper" },
+  { id: "documents", label: "Documents", icon: "folder" },
+  { id: "homework", label: "Homework", icon: "bookOpen" },
+  { id: "attendance", label: "Attendance", icon: "calendarCheck" },
+  { id: "wellness", label: "Wellness", icon: "heart" },
+  { id: "gatepass", label: "Gate Pass", icon: "doorOpen" },
+  { id: "leave", label: "Leave", icon: "fileCheck" },
+  { id: "announcements", label: "Announcements", icon: "megaphone" },
+  { id: "fees", label: "Fees", icon: "wallet" },
+  { id: "skilltree", label: "Skill Tree", icon: "tree" },
+  { id: "achievements", label: "Achievements", icon: "trophy" },
 ];
 
 interface DashboardData {
@@ -73,8 +72,7 @@ export default function StudentPage() {
   if (!data.success) return <ErrorState message={data.message || "Student record not linked."} />;
 
   return (
-    <AppShell user={user} title={`Student dashboard — ${data.profile?.class ?? ""}`}>
-      <TabNav tabs={TABS} active={tab} onChange={setTab} />
+    <AppShell user={user} title={`Student dashboard — ${data.profile?.class ?? ""}`} tabs={TABS} activeTab={tab} onTabChange={setTab}>
       {tab === "dashboard" && <OverviewTab data={data} onOpenMastery={() => setTab("mastery")} />}
       {tab === "inbox" && <InboxTab />}
       {tab === "mastery" && <MasteryTab />}

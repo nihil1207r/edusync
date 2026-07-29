@@ -37,7 +37,7 @@ export default function DocumentsTab() {
             href={d.file_url}
             target="_blank"
             rel="noreferrer"
-            className="text-sm text-accent-ink underline underline-offset-2 hover:no-underline"
+            className="text-sm text-accent underline underline-offset-2 hover:no-underline"
           >
             View
           </a>

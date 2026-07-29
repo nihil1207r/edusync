@@ -7,7 +7,7 @@ export function Card({
 }) {
   return (
     <div
-      className={`bg-paper-raised border border-line rounded-lg p-5 ${className}`}
+      className={`bg-paper-raised border border-line rounded-xl p-5 shadow-card ${className}`}
     >
       {children}
     </div>
@@ -16,7 +16,7 @@ export function Card({
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-serif text-lg text-ink mb-3">{children}</h2>
+    <h2 className="font-serif text-lg text-ink mb-3 tracking-tight">{children}</h2>
   );
 }
 
@@ -33,12 +33,13 @@ export function StatCard({
     ink: "text-ink",
     leaf: "text-leaf",
     brick: "text-brick",
-    accent: "text-accent-ink",
+    accent: "text-accent",
   };
   return (
-    <Card>
-      <p className="text-xs uppercase tracking-wide text-ink-soft mb-1">{label}</p>
-      <p className={`font-serif text-3xl ${toneColor[tone]}`}>{value}</p>
+    <Card className="relative overflow-hidden">
+      <span className="absolute left-0 top-0 h-full w-[3px]" style={{ background: "var(--line)" }} />
+      <p className="text-[11px] uppercase tracking-wide text-ink-soft mb-1.5">{label}</p>
+      <p className={`font-serif text-3xl tracking-tight ${toneColor[tone]}`}>{value}</p>
     </Card>
   );
 }
@@ -47,7 +48,7 @@ export function Stamp({ grade }: { grade: string }) {
   const color = grade.startsWith("A")
     ? "text-leaf"
     : grade.startsWith("B")
-      ? "text-accent-ink"
+      ? "text-accent"
       : "text-brick";
   return <span className={`stamp ${color}`}>{grade}</span>;
 }
@@ -60,13 +61,13 @@ export function Pill({
   tone?: "ink" | "leaf" | "brick" | "accent";
 }) {
   const toneClass: Record<string, string> = {
-    ink: "bg-ink/10 text-ink",
+    ink: "bg-ink/8 text-ink",
     leaf: "bg-leaf/15 text-leaf",
     brick: "bg-brick/15 text-brick",
-    accent: "bg-accent/20 text-accent-ink",
+    accent: "bg-accent/15 text-accent",
   };
   return (
-    <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${toneClass[tone]}`}>
+    <span className={`inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full ${toneClass[tone]}`}>
       {children}
     </span>
   );
@@ -86,16 +87,16 @@ export function Button({
   disabled?: boolean;
 }) {
   const styles: Record<string, string> = {
-    primary: "bg-ink text-paper hover:bg-ink/90",
-    secondary: "border border-line text-ink hover:bg-paper",
-    danger: "bg-brick text-paper hover:bg-brick/90",
+    primary: "bg-ink text-paper hover:bg-ink/88 shadow-card",
+    secondary: "border border-line text-ink bg-paper-raised hover:bg-paper hover:border-accent/40",
+    danger: "bg-brick text-paper hover:bg-brick/88 shadow-card",
   };
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`text-sm px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${styles[variant]}`}
+      className={`focus-ring text-sm font-medium px-4 py-2 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 ${styles[variant]}`}
     >
       {children}
     </button>
@@ -116,15 +117,16 @@ export function AIHighlightBanner({
   onClick: () => void;
 }) {
   return (
-    <div className="mb-6 rounded-lg border border-accent/40 bg-accent/10 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="relative mb-6 overflow-hidden rounded-xl border border-accent/30 bg-accent/[0.07] p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <span className="absolute left-0 top-0 h-full w-[3px] bg-accent" />
       <div>
-        <p className="text-xs uppercase tracking-wide text-accent-ink mb-1">{eyebrow}</p>
-        <p className="font-serif text-lg text-ink">{title}</p>
-        <p className="text-sm text-ink-soft mt-1">{description}</p>
+        <p className="text-[11px] uppercase tracking-wide text-accent mb-1 font-medium">{eyebrow}</p>
+        <p className="font-serif text-lg text-ink tracking-tight">{title}</p>
+        <p className="text-sm text-ink-soft mt-1 max-w-2xl">{description}</p>
       </div>
       <button
         onClick={onClick}
-        className="shrink-0 text-sm px-4 py-2 rounded bg-ink text-paper hover:bg-ink/90 transition-colors"
+        className="focus-ring shrink-0 text-sm font-medium px-4 py-2 rounded-lg bg-ink text-paper hover:bg-ink/88 transition-all active:scale-[0.98] shadow-card"
       >
         {ctaLabel} →
       </button>
@@ -133,7 +135,14 @@ export function AIHighlightBanner({
 }
 
 export function LoadingState() {
-  return <p className="text-ink-soft text-sm py-12 text-center">Loading…</p>;
+  return (
+    <div className="flex items-center justify-center gap-2 text-ink-soft text-sm py-16">
+      <span className="w-1.5 h-1.5 rounded-full bg-ink-soft animate-bounce [animation-delay:-0.2s]" />
+      <span className="w-1.5 h-1.5 rounded-full bg-ink-soft animate-bounce" />
+      <span className="w-1.5 h-1.5 rounded-full bg-ink-soft animate-bounce [animation-delay:0.2s]" />
+      <span className="ml-1">Loading…</span>
+    </div>
+  );
 }
 
 export function ErrorState({ message }: { message: string }) {

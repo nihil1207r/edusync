@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuthGuard } from "@/lib/useAuthGuard";
 import { apiGet, apiPost } from "@/lib/api";
-import AppShell from "@/components/AppShell";
-import { TabNav } from "@/components/TabNav";
+import AppShell, { type ShellTab } from "@/components/AppShell";
 import { Card, StatCard, Pill, Button, SectionTitle, LoadingState, ErrorState, AIHighlightBanner } from "@/components/ui";
 import type { Student, Wellness, Homework, AdminProfileRow, BusRoute, Bus, SOSAlert } from "@/lib/types";
 import InboxTab from "@/components/InboxTab";
@@ -12,17 +11,17 @@ import DocumentsTab from "@/components/DocumentsTab";
 import TimetableTab from "@/components/TimetableTab";
 import SimulatorTab from "@/components/SimulatorTab";
 
-const TABS = [
-  { id: "dashboard", label: "Dashboard" },
-  { id: "simulator", label: "School Simulator" },
-  { id: "inbox", label: "Inbox" },
-  { id: "wellness", label: "Wellness" },
-  { id: "users", label: "Users" },
-  { id: "students", label: "Students" },
-  { id: "notices", label: "Notices" },
-  { id: "buses", label: "Buses & Routes" },
-  { id: "timetable", label: "Timetable" },
-  { id: "documents", label: "Documents" },
+const TABS: ShellTab[] = [
+  { id: "dashboard", label: "Dashboard", icon: "dashboard" },
+  { id: "simulator", label: "School Simulator", icon: "wand" },
+  { id: "inbox", label: "Inbox", icon: "inbox" },
+  { id: "wellness", label: "Wellness", icon: "heart" },
+  { id: "users", label: "Users", icon: "users" },
+  { id: "students", label: "Students", icon: "users" },
+  { id: "notices", label: "Notices", icon: "bell" },
+  { id: "buses", label: "Buses & Routes", icon: "bus" },
+  { id: "timetable", label: "Timetable", icon: "clock" },
+  { id: "documents", label: "Documents", icon: "folder" },
 ];
 
 interface StatsData {
@@ -53,8 +52,7 @@ export default function AdminPage() {
   if (!data.success) return <ErrorState message="Could not load admin stats." />;
 
   return (
-    <AppShell user={user} title="Admin dashboard">
-      <TabNav tabs={TABS} active={tab} onChange={setTab} />
+    <AppShell user={user} title="Admin dashboard" tabs={TABS} activeTab={tab} onTabChange={setTab}>
       {tab === "dashboard" && <OverviewTab data={data} onOpenSimulator={() => setTab("simulator")} />}
       {tab === "inbox" && <InboxTab />}
       {tab === "users" && <UsersTab users={data.users} students={data.students} onChange={refreshStats} />}

@@ -134,7 +134,7 @@ export default function FriendshipTab({ students }: { students: Student[] }) {
           ))}
           <Button type="submit">Log</Button>
           {engSaved && <span className="text-sm text-leaf ml-2">Logged.</span>}
-          {bountyAwarded && <span className="text-sm text-accent-ink ml-2">✨ Curiosity bounty awarded (+10 points)!</span>}
+          {bountyAwarded && <span className="text-sm text-accent ml-2">✨ Curiosity bounty awarded (+10 points)!</span>}
         </form>
 
         <SectionTitle>Log your own observation</SectionTitle>

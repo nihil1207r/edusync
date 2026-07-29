@@ -35,7 +35,7 @@ export default function SimulatorTab() {
       </form>
       <div className="flex flex-wrap gap-2">
         {EXAMPLES.map((ex) => (
-          <button key={ex} onClick={() => setQuestion(ex)} className="text-xs text-accent-ink underline underline-offset-2 hover:no-underline">
+          <button key={ex} onClick={() => setQuestion(ex)} className="text-xs text-accent underline underline-offset-2 hover:no-underline">
             {ex}
           </button>
         ))}

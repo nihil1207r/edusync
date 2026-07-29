@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPost } from "@/lib/api";
 import { Button } from "@/components/ui";
+import ThemeToggle from "@/components/ThemeToggle";
 import { hasActiveTabSession, markSessionActive } from "@/lib/session";
 import type { MeResponse } from "@/lib/types";
 
@@ -63,14 +64,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
+      <div className="absolute top-5 right-5">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <p className="font-serif text-3xl text-ink">EduNexus</p>
+        <div className="text-center mb-8 flex flex-col items-center">
+          <span className="stamp !w-14 !h-14 !text-lg text-accent border-accent/70 mb-3">EN</span>
+          <p className="font-serif text-3xl text-ink tracking-tight">EduNexus</p>
           <p className="text-sm text-ink-soft mt-1">Sign in to your school account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-paper-raised border border-line rounded-lg p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-paper-raised border border-line rounded-xl p-6 space-y-4 shadow-raised">
           <div>
             <label className="block text-xs uppercase tracking-wide text-ink-soft mb-1">
               Email address
@@ -82,7 +87,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
-              className="w-full border border-line rounded px-3 py-2 bg-paper text-ink focus:outline-none focus:ring-2 focus:ring-accent"
+              className="focus-ring w-full border border-line rounded-lg px-3 py-2 bg-paper text-ink"
             />
           </div>
           <div>
@@ -96,7 +101,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
-              className="w-full border border-line rounded px-3 py-2 bg-paper text-ink focus:outline-none focus:ring-2 focus:ring-accent"
+              className="focus-ring w-full border border-line rounded-lg px-3 py-2 bg-paper text-ink"
             />
           </div>
 
@@ -107,7 +112,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-6 bg-paper-raised border border-line rounded-lg p-4">
+        <div className="mt-6 bg-paper-raised border border-line rounded-xl p-4 shadow-card">
           <p className="text-xs uppercase tracking-wide text-ink-soft mb-2">
             Demo accounts — click to autofill
           </p>
@@ -120,7 +125,7 @@ export default function LoginPage() {
                   setEmail(acc.email);
                   setPassword(acc.password);
                 }}
-                className="w-full flex items-center justify-between text-left px-2 py-1.5 rounded hover:bg-paper transition-colors"
+                className="focus-ring w-full flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg hover:bg-paper transition-colors"
               >
                 <span className="text-sm font-medium text-ink">{acc.role}</span>
                 <span className="text-xs font-mono text-ink-soft">{acc.email}</span>

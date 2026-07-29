@@ -1,29 +1,52 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 /*
-  Palette — five given colors only, everything else (soft text, hairlines,
-  danger state) derived from these via color-mix() rather than inventing
-  new hex values.
-    #646536  Olive Leaf     -> success / positive tone
-    #A53F2B  Burnt Brick    -> primary accent (buttons, highlights)
-    #020100  Jet Black      -> ink / primary text
-    #CFD2B2  Sage Mist      -> paper / page background
-    #E0D8DE  Misty Lavender -> raised surface (cards) + text-on-accent
+  EduNexus — "Ledger" identity, day and night editions.
+
+  The subject is a school register: a bound ledger of attendance marks,
+  grade entries and wax-stamped approvals. Day mode reads like that ledger
+  open on a desk in daylight — stone paper, ivory leaves, a brass seal for
+  emphasis. Night mode reads like the same book by lamplight — the paper
+  goes to ink, the brass turns to warm candle-gold, the moss deepens.
+  Every other surface in the app is built from these tokens; nothing is
+  hard-coded so the whole product repaints between editions at once.
 */
 :root {
-  --paper: #cfd2b2;
-  --paper-raised: #e0d8de;
-  --ink: #020100;
-  --ink-soft: color-mix(in srgb, var(--ink) 55%, var(--paper));
-  --accent: #a53f2b;
-  --accent-ink: #e0d8de;
-  --leaf: #646536;
-  --brick: color-mix(in srgb, var(--accent) 75%, var(--ink));
-  --line: color-mix(in srgb, var(--ink) 18%, var(--paper));
+  --paper: #d9d4c2;
+  --paper-raised: #f1ede1;
+  --ink: #1c1a14;
+  --ink-soft: color-mix(in srgb, var(--ink) 58%, var(--paper));
+  --accent: #8a6d2f;
+  --accent-ink: #fbf6e8;
+  --leaf: #4f5c37;
+  --brick: #8a3323;
+  --line: color-mix(in srgb, var(--ink) 16%, var(--paper));
+  --shadow-color: 30 20% 15%;
+  --shadow-card: 0 1px 2px hsl(var(--shadow-color) / 0.06), 0 6px 20px -8px hsl(var(--shadow-color) / 0.18);
+  --shadow-raised: 0 2px 6px hsl(var(--shadow-color) / 0.10), 0 16px 32px -12px hsl(var(--shadow-color) / 0.24);
+  --grain-opacity: 0.05;
 
-  --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  --font-display: "Iowan Old Style", Georgia, "Palatino Linotype", "Book Antiqua", serif;
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "SF Mono", "IBM Plex Mono", Menlo, Consolas, monospace;
+}
+
+.dark {
+  --paper: #14140f;
+  --paper-raised: #211f17;
+  --ink: #ece5d3;
+  --ink-soft: color-mix(in srgb, var(--ink) 55%, var(--paper));
+  --accent: #d0a53d;
+  --accent-ink: #1a1608;
+  --leaf: #93a26a;
+  --brick: #d97f65;
+  --line: color-mix(in srgb, var(--ink) 18%, var(--paper));
+  --shadow-color: 0 0% 0%;
+  --shadow-card: 0 1px 0 hsl(0 0% 100% / 0.03), 0 8px 24px -8px hsl(var(--shadow-color) / 0.55);
+  --shadow-raised: 0 1px 0 hsl(0 0% 100% / 0.04), 0 20px 40px -14px hsl(var(--shadow-color) / 0.65);
+  --grain-opacity: 0.07;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -41,10 +64,57 @@
   --font-mono: var(--font-mono);
 }
 
+* {
+  border-color: var(--line);
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
 body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-body);
+  position: relative;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* A near-invisible paper grain over the whole app — the one bit of texture
+   that keeps flat CSS colour from reading as a slick, generated gradient. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink) 22%, transparent);
+  border-radius: 999px;
+  border: 2px solid var(--paper);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--ink) 34%, transparent);
 }
 
 /* Signature: a double hairline "ledger rule" used to divide sections,
@@ -81,7 +151,25 @@ body {
   transform: rotate(-4deg);
 }
 
-::selection {
-  background: var(--accent);
-  color: var(--accent-ink);
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+.shadow-raised {
+  box-shadow: var(--shadow-raised);
+}
+
+/* Focus ring used across the app instead of the default blue browser ring */
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }
