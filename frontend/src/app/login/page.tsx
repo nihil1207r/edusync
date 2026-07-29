@@ -71,7 +71,7 @@ export default function LoginPage() {
         <ThemeToggle />
       </div>
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8 flex flex-col items-center">
+        <div className="text-center mb-8 flex flex-col items-center animate-surface-in">
           <span className="brand-glow inline-flex transition-transform duration-200 hover:scale-105">
             <img src="/brand/logo-icon.png" alt="EduNexus" className="w-20 h-20 object-contain" />
           </span>
@@ -83,8 +83,8 @@ export default function LoginPage() {
           onSubmit={handleSubmit}
           onMouseMove={(e) => setCardStyle(tiltStyle(e, 4))}
           onMouseLeave={() => setCardStyle(resetTiltStyle())}
-          style={{ transition: "transform 150ms ease-out", willChange: "transform", ...cardStyle }}
-          className="group/login relative overflow-hidden bg-paper-raised border border-line rounded-xl p-6 space-y-4 shadow-raised"
+          style={{ transition: "transform 150ms ease-out", willChange: "transform", animationDelay: "80ms", ...cardStyle }}
+          className="group/login relative overflow-hidden bg-paper-raised border border-line rounded-xl p-6 space-y-4 shadow-raised animate-surface-in"
         >
           <span
             aria-hidden="true"
@@ -132,7 +132,7 @@ export default function LoginPage() {
           </div>
         </form>
 
-        <div className="mt-6 bg-paper-raised border border-line rounded-xl p-4 shadow-card">
+        <div className="mt-6 bg-paper-raised border border-line rounded-xl p-4 shadow-card animate-surface-in" style={{ animationDelay: "160ms" }}>
           <p className="text-xs uppercase tracking-wide text-ink-soft mb-2">
             Demo accounts — click to autofill
           </p>

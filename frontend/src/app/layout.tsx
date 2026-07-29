@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import CursorGlow from "@/components/CursorGlow";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -34,7 +33,6 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-paper text-ink">
         {children}
-        <CursorGlow />
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
       </body>
     </html>

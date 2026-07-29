@@ -19,7 +19,7 @@ export function Card({
       onMouseMove={interactive ? (e) => setSpot(spotlightStyle(e)) : undefined}
       onMouseLeave={interactive ? () => setSpot({}) : undefined}
       style={spot}
-      className={`group/card relative bg-paper-raised border border-line rounded-xl p-5 shadow-card transition-shadow duration-200 hover:shadow-raised ${className}`}
+      className={`group/card relative bg-paper-raised border border-line rounded-xl p-5 shadow-card transition-shadow duration-200 hover:shadow-raised animate-surface-in ${className}`}
     >
       {interactive && (
         <span
@@ -64,7 +64,7 @@ export function StatCard({
       onMouseMove={(e) => setStyle(tiltStyle(e, 6))}
       onMouseLeave={() => setStyle(resetTiltStyle())}
       style={{ transition: "transform 150ms ease-out", willChange: "transform", ...style }}
-      className="group/stat relative bg-paper-raised border border-line rounded-xl p-5 shadow-card transition-shadow duration-200 hover:shadow-raised overflow-hidden"
+      className="group/stat relative bg-paper-raised border border-line rounded-xl p-5 shadow-card transition-shadow duration-200 hover:shadow-raised overflow-hidden animate-surface-in"
     >
       <span
         aria-hidden="true"
@@ -195,7 +195,7 @@ export function AIHighlightBanner({
       onMouseMove={(e) => setSpot(spotlightStyle(e))}
       onMouseLeave={() => setSpot({})}
       style={spot}
-      className="group/banner relative mb-6 overflow-hidden rounded-xl border border-accent/30 bg-accent/[0.07] p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+      className="group/banner relative mb-6 overflow-hidden rounded-xl border border-accent/30 bg-accent/[0.07] p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-surface-in"
     >
       <span
         aria-hidden="true"

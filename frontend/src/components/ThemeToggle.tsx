@@ -37,9 +37,11 @@ export default function ThemeToggle() {
       onClick={toggle}
       aria-label={mounted ? `Switch to ${theme === "dark" ? "day" : "night"} edition` : "Toggle theme"}
       title={mounted ? `Switch to ${theme === "dark" ? "day" : "night"} edition` : "Toggle theme"}
-      className="focus-ring relative flex items-center justify-center w-9 h-9 rounded-full border border-line bg-paper text-ink-soft hover:text-accent hover:border-accent/50 hover:scale-105 active:scale-90 transition-all duration-150"
+      className="focus-ring relative flex items-center justify-center w-9 h-9 rounded-full border border-line bg-paper text-ink-soft hover:text-accent hover:border-accent/50 hover:scale-105 active:scale-90 transition-all duration-150 overflow-hidden"
     >
-      {mounted && theme === "dark" ? <SunIcon /> : <MoonIcon />}
+      <span key={theme} className="inline-flex animate-surface-in" style={{ animationDuration: "260ms" }}>
+        {mounted && theme === "dark" ? <SunIcon /> : <MoonIcon />}
+      </span>
     </button>
   );
 }
