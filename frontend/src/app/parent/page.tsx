@@ -17,6 +17,8 @@ import SchoolMemoryTab from "@/components/SchoolMemoryTab";
 import MeetingPrepView from "@/components/MeetingPrepView";
 import GamificationTab from "@/components/AchievementsTab";
 import SkillTreeTab from "@/components/SkillTreeTab";
+import PicnicTab from "@/components/PicnicTab";
+import PTMTab from "@/components/PTMTab";
 
 const TABS: ShellTab[] = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard" },
@@ -30,6 +32,8 @@ const TABS: ShellTab[] = [
   { id: "documents", label: "Documents", icon: "folder" },
   { id: "attendance", label: "Attendance", icon: "calendarCheck" },
   { id: "wellness", label: "Wellness", icon: "heart" },
+  { id: "picnic", label: "Picnic Form", icon: "bus" },
+  { id: "ptm", label: "PTM Schedule", icon: "calendarCheck" },
   { id: "announcements", label: "Announcements", icon: "megaphone" },
   { id: "chat", label: "Message Teacher", icon: "chat" },
   { id: "fees", label: "Fees", icon: "wallet" },
@@ -77,6 +81,8 @@ export default function ParentPage() {
       {tab === "skilltree" && <SkillTreeTab />}
       {tab === "attendance" && <AttendanceTab attendance={data.attendance} pct={data.attendancePct} />}
       {tab === "wellness" && <WellnessTab wellness={data.wellness} />}
+      {tab === "picnic" && <PicnicTab role="parent" />}
+      {tab === "ptm" && <PTMTab role="parent" />}
       {tab === "fees" && <FeesTab />}
       {tab === "bus" && <BusMap />}
       {tab === "announcements" && <AnnouncementsTab announcements={data.announcements} />}

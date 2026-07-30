@@ -14,6 +14,11 @@ import ClassroomEnergyTab from "@/components/ClassroomEnergyTab";
 import FriendshipTab from "@/components/FriendshipTab";
 import SchoolMemoryTab from "@/components/SchoolMemoryTab";
 import MeetingPrepTab from "@/components/MeetingPrepTab";
+import BehaviorTab from "@/components/BehaviorTab";
+import PicnicTab from "@/components/PicnicTab";
+import PTMTab from "@/components/PTMTab";
+import SportsTab from "@/components/SportsTab";
+import { CLASS_OPTIONS } from "@/lib/classOptions";
 
 const TABS: ShellTab[] = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard" },
@@ -25,6 +30,7 @@ const TABS: ShellTab[] = [
   { id: "inbox", label: "Inbox", icon: "inbox" },
   { id: "students", label: "Students", icon: "users" },
   { id: "attendance", label: "Attendance", icon: "calendarCheck" },
+  { id: "behavior", label: "Social Behavior", icon: "heart" },
   { id: "homework", label: "Homework", icon: "bookOpen" },
   { id: "announcements", label: "Announcements", icon: "megaphone" },
   { id: "gatepasses", label: "Gate Passes", icon: "doorOpen" },
@@ -33,6 +39,9 @@ const TABS: ShellTab[] = [
   { id: "chat", label: "Chat", icon: "chat" },
   { id: "exams", label: "Exams & Results", icon: "examPaper" },
   { id: "timetable", label: "Timetable", icon: "clock" },
+  { id: "picnic", label: "Picnic Activities", icon: "bus" },
+  { id: "sports", label: "Sports Activities", icon: "trophy" },
+  { id: "ptm", label: "PTM Schedule", icon: "calendarCheck" },
   { id: "documents", label: "Documents", icon: "folder" },
   { id: "sos", label: "Bus SOS", icon: "busAlert" },
 ];
@@ -59,11 +68,15 @@ export default function TeacherPage() {
   if (checking || !user) return <LoadingState />;
 
   return (
-    <AppShell user={user} title="Teacher dashboard — Class 10A" tabs={TABS} activeTab={tab} onTabChange={setTab}>
+    <AppShell user={user} title={`Teacher dashboard — Class ${user.class || "10A"}`} tabs={TABS} activeTab={tab} onTabChange={setTab}>
       {tab === "dashboard" && <DashboardTab data={dashboard} onOpenFriendship={() => setTab("friendship")} />}
       {tab === "inbox" && <InboxTab />}
       {tab === "students" && <StudentsTab />}
       {tab === "attendance" && <AttendanceTab />}
+      {tab === "behavior" && <BehaviorTab role="teacher" />}
+      {tab === "picnic" && <PicnicTab role="teacher" />}
+      {tab === "sports" && <SportsTab role="teacher" />}
+      {tab === "ptm" && <PTMTab role="teacher" />}
       {tab === "homework" && <HomeworkTab initial={dashboard?.homework} />}
       {tab === "announcements" && <AnnouncementsTab initial={dashboard?.announcements} />}
       {tab === "gatepasses" && <GatepassesTab />}
@@ -72,10 +85,10 @@ export default function TeacherPage() {
       {tab === "flags" && <FlagsTab />}
       {tab === "chat" && <ChatTab />}
       {tab === "exams" && <ExamsManageTab />}
-      {tab === "timetable" && <TimetableTab />}
+      {tab === "timetable" && <TeacherTimetableTab />}
       {tab === "documents" && <DocumentsManageTab />}
       {tab === "sos" && <SOSTab />}
-      {tab === "classenergy" && <ClassroomEnergyTab defaultClass="10A" />}
+      {tab === "classenergy" && <ClassroomEnergyTab defaultClass={user.class || "10A"} />}
       {tab === "friendship" && <FriendshipTab students={dashboard?.students ?? []} />}
       {tab === "schoolmemory" && <SchoolMemoryTab students={dashboard?.students ?? []} />}
       {tab === "meetingprep" && <MeetingPrepTab students={dashboard?.students ?? []} />}
@@ -89,7 +102,7 @@ function DashboardTab({ data, onOpenFriendship }: { data: DashboardData | null; 
   return (
     <div className="space-y-8">
       <AIHighlightBanner
-        title="See Friendship Intelligence for 10A"
+        title="See Friendship Intelligence for your class"
         description="Participation-based isolation-risk and suggested-seating flags — every suggestion discloses its underlying stats and needs your accept/reject before it means anything."
         ctaLabel="Open Friendship Intelligence"
         onClick={onOpenFriendship}
@@ -633,7 +646,10 @@ function ExamsManageTab() {
       <div className="max-w-md">
         <SectionTitle>Schedule an exam</SectionTitle>
         <form onSubmit={createExam} className="space-y-3 bg-paper-raised border border-line rounded-lg p-4">
-          <input required placeholder="Class (e.g. 10A)" value={examForm.class} onChange={(e) => setExamForm({ ...examForm, class: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
+          <select required value={examForm.class} onChange={(e) => setExamForm({ ...examForm, class: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper">
+            <option value="">Select class…</option>
+            {CLASS_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
           <input required placeholder="Subject" value={examForm.subject} onChange={(e) => setExamForm({ ...examForm, subject: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
           <input required type="date" value={examForm.examDate} onChange={(e) => setExamForm({ ...examForm, examDate: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
           <input type="number" placeholder="Max marks" value={examForm.maxMarks} onChange={(e) => setExamForm({ ...examForm, maxMarks: Number(e.target.value) })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
@@ -677,6 +693,72 @@ function ExamsManageTab() {
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+const DAY_OPTIONS = [
+  { v: 1, label: "Monday" },
+  { v: 2, label: "Tuesday" },
+  { v: 3, label: "Wednesday" },
+  { v: 4, label: "Thursday" },
+  { v: 5, label: "Friday" },
+  { v: 6, label: "Saturday" },
+];
+
+function TeacherTimetableTab() {
+  const [form, setForm] = useState({
+    class: "", dayOfWeek: 1, period: 1, subject: "", teacherName: "", startTime: "", endTime: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [preview, setPreview] = useState("");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    await apiPost("/api/teacher/timetable", form);
+    setSaving(false);
+    setSaved(true);
+    if (!preview) setPreview(form.class);
+  }
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-6">
+      <div className="max-w-md">
+        <SectionTitle>Add a timetable slot for your class</SectionTitle>
+        <p className="text-xs text-ink-soft mb-3">
+          Students and parents in this class see this on their own &quot;Timetable&quot; tab immediately.
+        </p>
+        <form onSubmit={submit} className="space-y-3 bg-paper-raised border border-line rounded-lg p-4">
+          <select required value={form.class} onChange={(e) => setForm({ ...form, class: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper">
+            <option value="">Select class…</option>
+            {CLASS_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={form.dayOfWeek} onChange={(e) => setForm({ ...form, dayOfWeek: Number(e.target.value) })} className="w-full border border-line rounded px-3 py-2 bg-paper">
+            {DAY_OPTIONS.map((d) => (
+              <option key={d.v} value={d.v}>{d.label}</option>
+            ))}
+          </select>
+          <input required type="number" min={1} max={10} placeholder="Period number" value={form.period} onChange={(e) => setForm({ ...form, period: Number(e.target.value) })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
+          <input required placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
+          <input placeholder="Teacher name (optional)" value={form.teacherName} onChange={(e) => setForm({ ...form, teacherName: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
+          <div className="flex gap-2">
+            <input required type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
+            <input required type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
+          </div>
+          <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save slot"}</Button>
+        </form>
+        {saved && <p className="text-sm text-leaf mt-2">Slot saved. Adding another for the same class/day/period overwrites it.</p>}
+      </div>
+      <div>
+        <SectionTitle>Preview a class&apos;s week</SectionTitle>
+        <select value={preview} onChange={(e) => setPreview(e.target.value)} className="w-full max-w-xs border border-line rounded px-3 py-2 bg-paper mb-3">
+          <option value="">My class</option>
+          {CLASS_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <TimetableTab classOverride={preview || undefined} />
       </div>
     </div>
   );

@@ -1,5 +1,63 @@
 # NOTES
 
+## Phase 6 (hackathon feature pass): Principal rename, classes 1–12, Social
+## Behavior, Picnics, PTM schedule, Sports activities
+
+- **Admin → Principal**: the UI-facing label is now "Principal" everywhere
+  (nav, dashboard title, login demo button). The underlying `role` value in
+  the database/session is still `admin` — renaming the actual role string
+  would touch RLS policies, route guards, and every `requireAuth("admin")`
+  call for a purely cosmetic change, so only the display label changed.
+- **Classes 1–12, not just 10A**: `class` was always a free-text column (see
+  migrations/001), but several backend endpoints — `TeacherDashboard`,
+  `TeacherStudents`, Classroom Energy, Friendship Intelligence, Silent
+  Student Flags — had `class` **hardcoded to `"10A"`**, which is the actual
+  reason the app looked class-10-only. These now resolve the logged-in
+  teacher's own class (`classForUser` in `activities.go`), falling back to
+  `"10A"` only if nothing is set. Every class-picker in the frontend (admin
+  timetable/notices, teacher timetable/exams, and all new Phase 6 forms) now
+  uses a shared `CLASS_OPTIONS` list (grades 1–12 × sections A–D) instead of
+  a free-text "e.g. 10A" input. The seed script now also rosters one section
+  per grade 1–12 (roster-only rows, no login) alongside the original 10A
+  demo family, so the admin "Students" tab and class dropdowns show a real
+  whole-school spread.
+- **Social behavior**: new `student_behavior_logs` table. Teachers log a
+  short note + category (positive / neutral / needs attention / incident) +
+  1–5 rating per student from the new "Social Behavior" tab; students and
+  parents see only their own child's entries (RLS + handler-level scoping).
+- **Picnics & trips**: new `picnics` + `picnic_requests` tables. Teachers
+  plan a picnic (class, date, location, cost, cap) from "Picnic Activities";
+  students request to join from their "Picnic" tab; parents fill the
+  **picnic consent form** (consent toggle + notes) from their "Picnic Form"
+  tab, which is the actual write path a school would need before letting a
+  child go on a trip. Teachers approve/reject requests from the same tab.
+- **PTM (Parent-Teacher Meeting) schedule**: new `ptm_schedules` +
+  `ptm_bookings` tables. Teachers publish PTM slots (date/time/location/
+  agenda) from their "PTM Schedule" tab; parents book a slot from their own
+  "PTM Schedule" tab; teachers see who's booked.
+- **Sports activities**: new `sports_activities` + `sports_signups` tables.
+  Teachers publish activities (class-scoped or whole-school) with a coach
+  and date; students sign up from their "Sports Activities" tab.
+- **Timetable, now teacher-editable too**: previously only
+  `POST /api/admin/timetable` existed; added `POST /api/teacher/timetable`
+  (same handler, same `class,day_of_week,period` upsert) so a teacher can
+  publish their own class's daily timetable, which students and parents
+  already saw read-only on their existing "Timetable" tabs.
+- All of the above follows the existing codebase's own patterns exactly:
+  additive migration (`010_behavior_picnic_ptm_sports.sql`) with RLS on
+  every new table (staff write / family-reads-own-child), audit-logged
+  writes where the rest of the app audit-logs (picnic/PTM/behavior create +
+  update), and `orEmpty`/`firstOrNil` conventions in the Go handlers.
+- Verified in this pass: `go build ./...` and `go vet ./...` clean;
+  frontend `tsc --noEmit` and `eslint` clean (aside from pre-existing
+  `react-hooks/set-state-in-effect` findings already present on
+  `ClassroomEnergyTab`, `FriendshipTab`, `ThemeToggle`, etc. before this
+  pass — the new tabs follow the exact same fetch-on-mount pattern as those
+  files, not a new issue). `next build` could not be verified in this
+  sandbox: it fails on the pre-existing `next/font` Google Fonts fetch
+  (`fonts.googleapis.com` isn't reachable here), unrelated to this change —
+  worth a real `next build` once you have normal internet access.
+
 Honest accounting of what's real, what's stubbed, and what's out of scope in
 this pass — so nothing here is silently faked.
 

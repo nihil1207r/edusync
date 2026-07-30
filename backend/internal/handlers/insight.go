@@ -252,8 +252,9 @@ func callGemini(apiKey, prompt string, maxTokens int) (string, error) {
 // flags (never diagnoses) students whose last 7 days show zero homework
 // submissions AND below-average wellness check-ins, for a teacher to review.
 func (d *Deps) SilentStudentFlags(c *fiber.Ctx) error {
+	class := d.classForUser(c)
 	var students []map[string]interface{}
-	_ = d.UserDB(c).Select("students", url.Values{"select": {"id,name,class"}, "class": {"eq.10A"}}, &students)
+	_ = d.UserDB(c).Select("students", url.Values{"select": {"id,name,class"}, "class": {"eq." + class}}, &students)
 
 	flags := make([]fiber.Map, 0)
 	for _, s := range students {

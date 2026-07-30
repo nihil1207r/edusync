@@ -10,6 +10,7 @@ import InboxTab from "@/components/InboxTab";
 import DocumentsTab from "@/components/DocumentsTab";
 import TimetableTab from "@/components/TimetableTab";
 import SimulatorTab from "@/components/SimulatorTab";
+import { CLASS_OPTIONS } from "@/lib/classOptions";
 
 const TABS: ShellTab[] = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard" },
@@ -52,7 +53,7 @@ export default function AdminPage() {
   if (!data.success) return <ErrorState message="Could not load admin stats." />;
 
   return (
-    <AppShell user={user} title="Admin dashboard" tabs={TABS} activeTab={tab} onTabChange={setTab}>
+    <AppShell user={user} title="Principal dashboard" tabs={TABS} activeTab={tab} onTabChange={setTab}>
       {tab === "dashboard" && <OverviewTab data={data} onOpenSimulator={() => setTab("simulator")} />}
       {tab === "inbox" && <InboxTab />}
       {tab === "users" && <UsersTab users={data.users} students={data.students} onChange={refreshStats} />}
@@ -274,9 +275,19 @@ function NoticesTab() {
           <option value="class">Specific class</option>
           <option value="role">Specific role</option>
         </select>
-        {form.audience !== "school" && (
+        {form.audience === "class" && (
+          <select
+            value={form.audienceValue}
+            onChange={(e) => setForm({ ...form, audienceValue: e.target.value })}
+            className="w-full border border-line rounded px-3 py-2 bg-paper"
+          >
+            <option value="">Select class…</option>
+            {CLASS_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
+        {form.audience === "role" && (
           <input
-            placeholder={form.audience === "class" ? "e.g. 10A" : "e.g. parent"}
+            placeholder="e.g. parent"
             value={form.audienceValue}
             onChange={(e) => setForm({ ...form, audienceValue: e.target.value })}
             className="w-full border border-line rounded px-3 py-2 bg-paper"
@@ -465,7 +476,7 @@ function TimetableManageTab() {
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [preview, setPreview] = useState("10A");
+  const [preview, setPreview] = useState("1A");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -480,7 +491,10 @@ function TimetableManageTab() {
       <div className="max-w-md">
         <SectionTitle>Add a timetable slot</SectionTitle>
         <form onSubmit={submit} className="space-y-3 bg-paper-raised border border-line rounded-lg p-4">
-          <input required placeholder="Class (e.g. 10A)" value={form.class} onChange={(e) => setForm({ ...form, class: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
+          <select required value={form.class} onChange={(e) => setForm({ ...form, class: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper">
+            <option value="">Select class…</option>
+            {CLASS_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
           <select value={form.dayOfWeek} onChange={(e) => setForm({ ...form, dayOfWeek: Number(e.target.value) })} className="w-full border border-line rounded px-3 py-2 bg-paper">
             {DAY_OPTIONS.map((d) => (
               <option key={d.v} value={d.v}>{d.label}</option>
@@ -499,7 +513,9 @@ function TimetableManageTab() {
       </div>
       <div>
         <SectionTitle>Preview a class&apos;s week</SectionTitle>
-        <input placeholder="Class (e.g. 10A)" value={preview} onChange={(e) => setPreview(e.target.value)} className="w-full max-w-xs border border-line rounded px-3 py-2 bg-paper mb-3" />
+        <select value={preview} onChange={(e) => setPreview(e.target.value)} className="w-full max-w-xs border border-line rounded px-3 py-2 bg-paper mb-3">
+          {CLASS_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
         <TimetableTab classOverride={preview} />
       </div>
     </div>

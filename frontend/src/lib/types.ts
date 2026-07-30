@@ -397,3 +397,84 @@ export interface ProgressComparisonResponse {
   lastMonth?: MonthMetrics;
   note?: string;
 }
+
+// ---- Phase 6 additions: social behavior, picnics, PTM, sports ----------
+
+export interface BehaviorLog {
+  id: string;
+  student_id: string;
+  class: string;
+  category: "positive" | "neutral" | "needs_attention" | "incident";
+  note: string;
+  rating?: number;
+  logged_by?: string;
+  created_at: string;
+  students?: { name: string; roll_no: string };
+}
+
+export interface Picnic {
+  id: string;
+  title: string;
+  description?: string;
+  class: string;
+  location?: string;
+  event_date: string;
+  cost: number;
+  max_students?: number;
+  status: "planned" | "confirmed" | "cancelled" | "completed";
+  created_by?: string;
+  created_at: string;
+}
+
+export interface PicnicRequest {
+  id: string;
+  picnic_id: string;
+  student_id: string;
+  status: "pending" | "approved" | "rejected";
+  parent_consent: boolean;
+  parent_note?: string;
+  created_at: string;
+  students?: { name: string; roll_no: string; class: string };
+}
+
+export interface PTMSchedule {
+  id: string;
+  class: string;
+  teacher_name?: string;
+  scheduled_date: string;
+  start_time: string;
+  end_time: string;
+  location?: string;
+  agenda?: string;
+  created_at: string;
+}
+
+export interface PTMBooking {
+  id: string;
+  ptm_id: string;
+  student_id: string;
+  slot_time?: string;
+  status: "booked" | "cancelled";
+  created_at: string;
+  students?: { name: string; roll_no: string; class: string };
+}
+
+export interface SportsActivity {
+  id: string;
+  title: string;
+  description?: string;
+  class?: string;
+  category?: string;
+  schedule_date?: string;
+  coach_name?: string;
+  created_by?: string;
+  created_at: string;
+}
+
+export interface SportsSignup {
+  id: string;
+  activity_id: string;
+  student_id: string;
+  created_at: string;
+  students?: { name: string; roll_no: string; class: string };
+}

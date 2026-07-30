@@ -13,7 +13,7 @@ const DEMO_ACCOUNTS = [
   { role: "Teacher", email: "priya@edunexus.com", password: "teacher123" },
   { role: "Parent", email: "arjun@edunexus.com", password: "parent123" },
   { role: "Student", email: "rahul@edunexus.com", password: "student123" },
-  { role: "Admin", email: "admin@edunexus.com", password: "admin123" },
+  { role: "Principal", email: "admin@edunexus.com", password: "admin123" },
 ];
 
 type LoginResponse = {

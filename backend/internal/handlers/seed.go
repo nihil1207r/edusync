@@ -332,6 +332,73 @@ func (d *Deps) Seed(c *fiber.Ctx) error {
 		}
 	}
 
+	// ── Multi-class roster (classes 1–12) ──────────────────────────────
+	// Beyond the core 10A demo family seeded above (which the rest of this
+	// function, and the e2e specs, depend on staying exactly as-is), also
+	// seed a lightweight roster across every class 1–12 so the school
+	// genuinely spans grades 1–12 rather than a single section. These
+	// students don't have login accounts (no matching Supabase Auth user)
+	// — they're roster/reporting rows only, enough for the class dropdowns,
+	// admin "Students" tab, and timetable/picnic/sports/PTM demos to show a
+	// real whole-school spread.
+	multiClassNames := []string{"1A", "2A", "3A", "4A", "5A", "6A", "7A", "8A", "9A", "10B", "11A", "12A"}
+	namePool := []string{"Aarav Shah", "Diya Nair", "Ishaan Verma", "Meera Iyer", "Vihaan Joshi", "Ananya Gupta"}
+	var multiClassStudents []studentRow
+	{
+		var rosterInsert []map[string]interface{}
+		for _, cls := range multiClassNames {
+			for i, name := range namePool {
+				rosterInsert = append(rosterInsert, map[string]interface{}{
+					"name": fmt.Sprintf("%s (%s)", name, cls), "class": cls,
+					"roll_no": fmt.Sprintf("%d", i+1), "points": 200 + i*30,
+					"badges": []string{},
+				})
+			}
+		}
+		_ = d.DB.Upsert("students", rosterInsert, "roll_no,class", true, &multiClassStudents)
+	}
+
+	// A timetable slot + an exam for a couple of the newly-rostered classes,
+	// so "class 1–12" is visible end-to-end, not just in the roster table.
+	_ = d.DB.Upsert("timetable_slots", []map[string]interface{}{
+		{"class": "1A", "day_of_week": 1, "period": 1, "subject": "English", "teacher_name": "Mrs. Kavita Rao", "start_time": "09:00", "end_time": "09:40"},
+		{"class": "5A", "day_of_week": 1, "period": 1, "subject": "Science", "teacher_name": "Mr. Vikram Desai", "start_time": "09:00", "end_time": "09:45"},
+		{"class": "12A", "day_of_week": 1, "period": 1, "subject": "Physics", "teacher_name": "Dr. Sunita Menon", "start_time": "08:30", "end_time": "09:15"},
+	}, "class,day_of_week,period", false, nil)
+	_ = d.DB.Upsert("exams", []map[string]interface{}{
+		{"class": "5A", "subject": "Science", "exam_date": time.Now().AddDate(0, 0, 10).Format("2006-01-02"), "max_marks": 100, "term": "Term 1"},
+		{"class": "12A", "subject": "Physics", "exam_date": time.Now().AddDate(0, 0, 14).Format("2006-01-02"), "max_marks": 100, "term": "Term 1"},
+	}, "", false, nil)
+
+	// ── Picnics, PTM schedule, sports activities, social behavior (Phase 6) ─
+	var picnicRows []map[string]interface{}
+	_ = d.DB.Upsert("picnics", []map[string]interface{}{
+		{"title": "Nature Trail & Picnic", "description": "A day trip to the botanical gardens with games and a packed lunch.", "class": "10A", "location": "City Botanical Gardens", "event_date": time.Now().AddDate(0, 0, 20).Format("2006-01-02"), "cost": 350, "max_students": 40, "created_by": "Mrs. Priya Sharma"},
+		{"title": "Adventure Park Trip", "description": "Zip-lining and rock climbing for the seniors.", "class": "12A", "location": "Adventure Valley Park", "event_date": time.Now().AddDate(0, 0, 30).Format("2006-01-02"), "cost": 600, "max_students": 35, "created_by": "Dr. Sunita Menon"},
+	}, "", true, &picnicRows)
+
+	if len(students) > 0 && len(picnicRows) > 0 {
+		_ = d.DB.Upsert("picnic_requests", []map[string]interface{}{
+			{"picnic_id": picnicRows[0]["id"], "student_id": students[0].ID, "status": "pending", "parent_consent": false},
+		}, "picnic_id,student_id", false, nil)
+	}
+
+	_ = d.DB.Upsert("ptm_schedules", []map[string]interface{}{
+		{"class": "10A", "teacher_name": "Mrs. Priya Sharma", "scheduled_date": time.Now().AddDate(0, 0, 12).Format("2006-01-02"), "start_time": "16:00", "end_time": "18:00", "location": "Classroom 10A", "agenda": "Mid-term progress review"},
+	}, "", false, nil)
+
+	_ = d.DB.Upsert("sports_activities", []map[string]interface{}{
+		{"title": "Inter-house Cricket Tournament", "description": "Round-robin cricket matches between the four school houses.", "class": nil, "category": "cricket", "schedule_date": time.Now().AddDate(0, 0, 15).Format("2006-01-02"), "coach_name": "Coach Ramesh", "created_by": "Mrs. Priya Sharma"},
+		{"title": "Athletics Practice", "description": "After-school track and field practice.", "class": "10A", "category": "athletics", "schedule_date": time.Now().AddDate(0, 0, 5).Format("2006-01-02"), "coach_name": "Coach Ramesh", "created_by": "Mrs. Priya Sharma"},
+	}, "", false, nil)
+
+	if len(students) > 0 {
+		_ = d.DB.Upsert("student_behavior_logs", []map[string]interface{}{
+			{"student_id": students[0].ID, "class": "10A", "category": "positive", "note": "Helped a classmate understand a tough algebra problem — great peer teaching.", "rating": 5, "logged_by": "Mrs. Priya Sharma"},
+			{"student_id": students[0].ID, "class": "10A", "category": "needs_attention", "note": "Was distracted and chatty during the science lecture.", "rating": 3, "logged_by": "Mrs. Priya Sharma"},
+		}, "", false, nil)
+	}
+
 	emails := make([]string, 0, len(userMap))
 	for e := range userMap {
 		emails = append(emails, e)

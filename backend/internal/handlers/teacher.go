@@ -13,7 +13,8 @@ func (d *Deps) TeacherDashboard(c *fiber.Ctx) error {
 	var homework []map[string]interface{}
 	var wellness []map[string]interface{}
 
-	_ = d.UserDB(c).Select("students", url.Values{"select": {"*"}, "class": {"eq.10A"}}, &students)
+	class := d.classForUser(c)
+	_ = d.UserDB(c).Select("students", url.Values{"select": {"*"}, "class": {"eq." + class}}, &students)
 	_ = d.UserDB(c).Select("announcements", url.Values{"select": {"*"}, "order": {"created_at.desc"}, "limit": {"5"}}, &announcements)
 	_ = d.UserDB(c).Select("homework", url.Values{"select": {"*,homework_submissions(count)"}, "order": {"created_at.desc"}}, &homework)
 	_ = d.UserDB(c).Select("wellness", url.Values{"select": {"*"}, "order": {"created_at.desc"}, "limit": {"20"}}, &wellness)
@@ -40,8 +41,12 @@ func (d *Deps) TeacherDashboard(c *fiber.Ctx) error {
 }
 
 func (d *Deps) TeacherStudents(c *fiber.Ctx) error {
+	class := c.Query("class")
+	if class == "" {
+		class = d.classForUser(c)
+	}
 	var students []map[string]interface{}
-	_ = d.UserDB(c).Select("students", url.Values{"select": {"*,grades(*),attendance(*)"}, "class": {"eq.10A"}}, &students)
+	_ = d.UserDB(c).Select("students", url.Values{"select": {"*,grades(*),attendance(*)"}, "class": {"eq." + class}}, &students)
 	return c.JSON(fiber.Map{"success": true, "students": orEmpty(students)})
 }
 

@@ -107,6 +107,31 @@ func (d *Deps) RegisterRoutes(app *fiber.App) {
 	// ---- Timetable ----
 	app.Get("/api/timetable", requireAuth(""), d.ListTimetable)
 	app.Post("/api/admin/timetable", requireAuth("admin"), d.CreateTimetableSlot)
+	app.Post("/api/teacher/timetable", requireAuth("teacher"), d.CreateTimetableSlot)
+
+	// ---- Social behavior (teacher logs; student/parent view own child) ----
+	app.Post("/api/teacher/behavior", requireAuth("teacher"), d.CreateBehaviorLog)
+	app.Get("/api/behavior", requireAuth(""), d.ListBehaviorLogs)
+
+	// ---- Picnics / trips ----
+	app.Get("/api/picnics", requireAuth(""), d.ListPicnics)
+	app.Post("/api/teacher/picnics", requireAuth("teacher"), d.CreatePicnic)
+	app.Post("/api/student/picnic-request", requireAuth("student"), d.RequestPicnic)
+	app.Post("/api/parent/picnic-consent", requireAuth("parent"), d.SubmitPicnicConsent)
+	app.Get("/api/picnic-requests", requireAuth(""), d.ListPicnicRequests)
+	app.Post("/api/teacher/picnic-requests/update", requireAuth("teacher"), d.UpdatePicnicRequest)
+
+	// ---- Parent-Teacher Meeting (PTM) schedule ----
+	app.Get("/api/ptm", requireAuth(""), d.ListPTM)
+	app.Post("/api/teacher/ptm", requireAuth("teacher"), d.CreatePTM)
+	app.Post("/api/parent/ptm-book", requireAuth("parent"), d.BookPTM)
+	app.Get("/api/teacher/ptm-bookings", requireAuth("teacher"), d.ListPTMBookings)
+
+	// ---- Sports activities ----
+	app.Get("/api/sports", requireAuth(""), d.ListSportsActivities)
+	app.Post("/api/teacher/sports", requireAuth("teacher"), d.CreateSportsActivity)
+	app.Post("/api/student/sports-signup", requireAuth("student"), d.SignupSports)
+	app.Get("/api/sports-signups", requireAuth(""), d.ListSportsSignups)
 
 	// ---- Exams & results ----
 	app.Get("/api/exams", requireAuth(""), d.ListExams)

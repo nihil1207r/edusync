@@ -22,7 +22,7 @@ import (
 func (d *Deps) GenerateFriendshipSuggestions(c *fiber.Ctx) error {
 	class := c.Query("class")
 	if class == "" {
-		class = "10A"
+		class = d.classForUser(c)
 	}
 	db := d.UserDB(c)
 

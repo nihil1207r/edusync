@@ -13,7 +13,7 @@ const ROLE_LABEL: Record<string, string> = {
   teacher: "Teacher",
   parent: "Parent",
   student: "Student",
-  admin: "Admin",
+  admin: "Principal",
   driver: "Driver",
 };
 

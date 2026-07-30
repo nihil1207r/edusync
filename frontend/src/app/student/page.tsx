@@ -18,6 +18,8 @@ import SchoolMemoryTab from "@/components/SchoolMemoryTab";
 import MeetingPrepView from "@/components/MeetingPrepView";
 import GamificationTab from "@/components/AchievementsTab";
 import SkillTreeTab from "@/components/SkillTreeTab";
+import PicnicTab from "@/components/PicnicTab";
+import SportsTab from "@/components/SportsTab";
 
 const TABS: ShellTab[] = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard" },
@@ -35,6 +37,8 @@ const TABS: ShellTab[] = [
   { id: "wellness", label: "Wellness", icon: "heart" },
   { id: "gatepass", label: "Gate Pass", icon: "doorOpen" },
   { id: "leave", label: "Leave", icon: "fileCheck" },
+  { id: "picnic", label: "Picnic", icon: "bus" },
+  { id: "sports", label: "Sports Activities", icon: "trophy" },
   { id: "announcements", label: "Announcements", icon: "megaphone" },
   { id: "fees", label: "Fees", icon: "wallet" },
   { id: "skilltree", label: "Skill Tree", icon: "tree" },
@@ -88,6 +92,8 @@ export default function StudentPage() {
       {tab === "wellness" && <WellnessTab />}
       {tab === "gatepass" && <GatepassTab />}
       {tab === "leave" && <LeaveTab />}
+      {tab === "picnic" && <PicnicTab role="student" />}
+      {tab === "sports" && <SportsTab role="student" />}
       {tab === "fees" && <FeesTab />}
       {tab === "bus" && <BusMap />}
       {tab === "announcements" && <AnnouncementsTab announcements={data.announcements} />}

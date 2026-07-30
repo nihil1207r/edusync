@@ -40,7 +40,7 @@ func (d *Deps) CreateClassEnergyLog(c *fiber.Ctx) error {
 func (d *Deps) ClassEnergyInsights(c *fiber.Ctx) error {
 	class := c.Query("class")
 	if class == "" {
-		class = "10A" // matches this codebase's existing single-class-per-teacher simplification
+		class = d.classForUser(c) // teacher's own assigned class, falling back to "10A"
 	}
 	var logs []map[string]interface{}
 	_ = d.UserDB(c).Select("class_energy_logs", url.Values{
