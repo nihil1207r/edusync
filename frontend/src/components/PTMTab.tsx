@@ -8,10 +8,17 @@ import { CLASS_OPTIONS } from "@/lib/classOptions";
 
 export default function PTMTab({ role }: { role: "teacher" | "parent" }) {
   const [schedules, setSchedules] = useState<PTMSchedule[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
-    const res = await apiGet<{ success: boolean; schedules: PTMSchedule[] }>("/api/ptm");
-    setSchedules(res.schedules ?? []);
+    setError(null);
+    try {
+      const res = await apiGet<{ success: boolean; schedules: PTMSchedule[] }>("/api/ptm");
+      setSchedules(res.schedules ?? []);
+    } catch {
+      setError("Couldn't load the PTM schedule right now — try again in a moment.");
+      setSchedules((prev) => prev ?? []);
+    }
   }
 
   useEffect(() => {
@@ -25,6 +32,7 @@ export default function PTMTab({ role }: { role: "teacher" | "parent" }) {
       {role === "teacher" && <TeacherCreatePTM onSaved={refresh} />}
       <div>
         <SectionTitle>Parent-Teacher Meeting schedule</SectionTitle>
+        {error && <p className="text-sm text-brick mb-3">{error}</p>}
         {schedules.length === 0 ? (
           <p className="text-sm text-ink-soft">No PTM slots scheduled yet.</p>
         ) : (
@@ -44,17 +52,33 @@ function PTMCard({ ptm, role }: { ptm: PTMSchedule; role: "teacher" | "parent" }
   const [booked, setBooked] = useState(false);
   const [slotTime, setSlotTime] = useState(ptm.start_time?.slice(0, 5) ?? "");
   const [bookings, setBookings] = useState<PTMBooking[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function book() {
     setBooking(true);
-    await apiPost("/api/parent/ptm-book", { ptmId: ptm.id, slotTime });
-    setBooking(false);
-    setBooked(true);
+    setError(null);
+    try {
+      const res = await apiPost<{ success: boolean; message?: string }>("/api/parent/ptm-book", { ptmId: ptm.id, slotTime });
+      if (!res.success) {
+        setError(res.message || "Couldn't book this slot — try again.");
+        return;
+      }
+      setBooked(true);
+    } catch {
+      setError("Couldn't book this slot — check your connection and try again.");
+    } finally {
+      setBooking(false);
+    }
   }
 
   async function loadBookings() {
-    const res = await apiGet<{ success: boolean; bookings: PTMBooking[] }>(`/api/teacher/ptm-bookings?ptmId=${ptm.id}`);
-    setBookings(res.bookings ?? []);
+    setError(null);
+    try {
+      const res = await apiGet<{ success: boolean; bookings: PTMBooking[] }>(`/api/teacher/ptm-bookings?ptmId=${ptm.id}`);
+      setBookings(res.bookings ?? []);
+    } catch {
+      setError("Couldn't load bookings — try again.");
+    }
   }
 
   return (
@@ -70,9 +94,10 @@ function PTMCard({ ptm, role }: { ptm: PTMSchedule; role: "teacher" | "parent" }
         </div>
       </div>
       {ptm.agenda && <p className="text-sm text-ink-soft mt-2">{ptm.agenda}</p>}
+      {error && <p className="text-xs text-brick mt-2">{error}</p>}
 
       {role === "parent" && (
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
           <input type="time" value={slotTime} onChange={(e) => setSlotTime(e.target.value)} className="border border-line rounded px-2 py-1 text-sm bg-paper" />
           <Button onClick={book} disabled={booking || booked}>{booked ? "Booked ✓" : booking ? "Booking…" : "Book a slot"}</Button>
         </div>
@@ -100,18 +125,35 @@ function PTMCard({ ptm, role }: { ptm: PTMSchedule; role: "teacher" | "parent" }
   );
 }
 
-function TeacherCreatePTM({ onSaved }: { onSaved: () => void }) {
+function TeacherCreatePTM({ onSaved }: { onSaved: () => void | Promise<void> }) {
   const [form, setForm] = useState({ class: "", scheduledDate: "", startTime: "", endTime: "", location: "", agenda: "" });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (form.startTime && form.endTime && form.startTime >= form.endTime) {
+      setError("End time must be after start time.");
+      return;
+    }
     setSaving(true);
-    await apiPost("/api/teacher/ptm", form);
-    setSaving(false);
-    setSaved(true);
-    onSaved();
+    setSaved(false);
+    setError(null);
+    try {
+      const res = await apiPost<{ success: boolean; message?: string }>("/api/teacher/ptm", form);
+      if (!res.success) {
+        setError(res.message || "Couldn't schedule the PTM — try again.");
+        return;
+      }
+      setSaved(true);
+      setForm({ class: "", scheduledDate: "", startTime: "", endTime: "", location: "", agenda: "" });
+      await onSaved();
+    } catch {
+      setError("Couldn't schedule the PTM — check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -131,6 +173,7 @@ function TeacherCreatePTM({ onSaved }: { onSaved: () => void }) {
         <textarea placeholder="Agenda" value={form.agenda} onChange={(e) => setForm({ ...form, agenda: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
         <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Schedule PTM"}</Button>
         {saved && <p className="text-sm text-leaf">PTM scheduled.</p>}
+        {error && <p className="text-sm text-brick">{error}</p>}
       </form>
     </div>
   );

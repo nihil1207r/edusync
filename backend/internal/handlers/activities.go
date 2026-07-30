@@ -169,10 +169,24 @@ func (d *Deps) SubmitPicnicConsent(c *fiber.Ctx) error {
 	if err != nil || studentID == "" {
 		return c.JSON(fiber.Map{"success": false, "message": "No student linked."})
 	}
-	dbErr := d.UserDB(c).Upsert("picnic_requests", []map[string]interface{}{{
-		"picnic_id": body.PicnicID, "student_id": studentID, "status": "pending",
-		"parent_consent": body.Consent, "parent_note": body.Note,
-	}}, "picnic_id,student_id", false, nil)
+	db := d.UserDB(c)
+
+	// A plain UPDATE, not an upsert: an upsert here would also overwrite
+	// `status`, silently reverting a teacher's approve/reject decision back
+	// to "pending" every time a parent (re)submits this form. The student's
+	// own join request must already exist — the frontend only shows this
+	// form once it does.
+	var existing map[string]interface{}
+	existErr := db.SelectOne("picnic_requests", url.Values{
+		"select": {"id"}, "picnic_id": {"eq." + body.PicnicID}, "student_id": {"eq." + studentID},
+	}, &existing)
+	if existErr != nil || existing == nil {
+		return c.JSON(fiber.Map{"success": false, "message": "Your child hasn't requested this picnic yet — ask them to request it first."})
+	}
+
+	dbErr := db.Update("picnic_requests", url.Values{
+		"picnic_id": {"eq." + body.PicnicID}, "student_id": {"eq." + studentID},
+	}, map[string]interface{}{"parent_consent": body.Consent, "parent_note": body.Note})
 	if dbErr != nil {
 		return c.JSON(fiber.Map{"success": false, "message": dbErr.Error()})
 	}
@@ -231,6 +245,9 @@ func (d *Deps) CreatePTM(c *fiber.Ctx) error {
 	}
 	if err := c.BodyParser(&body); err != nil || body.ScheduledDate == "" || body.StartTime == "" || body.EndTime == "" {
 		return c.JSON(fiber.Map{"success": false, "message": "scheduledDate, startTime, and endTime are required."})
+	}
+	if body.EndTime <= body.StartTime {
+		return c.JSON(fiber.Map{"success": false, "message": "endTime must be after startTime."})
 	}
 	if body.Class == "" {
 		body.Class = d.classForUser(c)

@@ -28,6 +28,7 @@ create policy "behavior: staff write" on student_behavior_logs
   for insert with check ((select role from auth_profile()) in ('teacher', 'admin'));
 
 create index if not exists idx_behavior_student on student_behavior_logs(student_id);
+create index if not exists idx_behavior_class on student_behavior_logs(class);
 
 -- ── Picnics / trips (teacher plans, student requests, parent consents) ──
 create table if not exists picnics (
@@ -55,6 +56,8 @@ create policy "picnics: staff write" on picnics
 
 create policy "picnics: staff update" on picnics
   for update using ((select role from auth_profile()) in ('teacher', 'admin'));
+
+create index if not exists idx_picnics_class on picnics(class);
 
 create table if not exists picnic_requests (
   id uuid primary key default gen_random_uuid(),
@@ -86,6 +89,8 @@ create policy "picnic_requests: family/staff update" on picnic_requests
     or (select role from auth_profile()) in ('teacher', 'admin')
   );
 
+create index if not exists idx_picnic_requests_student on picnic_requests(student_id);
+
 -- ── Parent-Teacher Meeting (PTM) schedule ───────────────────────────────
 create table if not exists ptm_schedules (
   id uuid primary key default gen_random_uuid(),
@@ -106,6 +111,8 @@ create policy "ptm: everyone logged in reads" on ptm_schedules
 
 create policy "ptm: staff write" on ptm_schedules
   for insert with check ((select role from auth_profile()) in ('teacher', 'admin'));
+
+create index if not exists idx_ptm_schedules_class on ptm_schedules(class);
 
 create table if not exists ptm_bookings (
   id uuid primary key default gen_random_uuid(),
@@ -128,6 +135,8 @@ create policy "ptm_bookings: family reads own child" on ptm_bookings
 create policy "ptm_bookings: family books own child" on ptm_bookings
   for insert with check (student_id = (select child_id from auth_profile()));
 
+create index if not exists idx_ptm_bookings_student on ptm_bookings(student_id);
+
 -- ── Sports activities (teacher/admin plans, student signs up) ──────────
 create table if not exists sports_activities (
   id uuid primary key default gen_random_uuid(),
@@ -149,6 +158,8 @@ create policy "sports: everyone logged in reads" on sports_activities
 create policy "sports: staff write" on sports_activities
   for insert with check ((select role from auth_profile()) in ('teacher', 'admin'));
 
+create index if not exists idx_sports_activities_class on sports_activities(class);
+
 create table if not exists sports_signups (
   id uuid primary key default gen_random_uuid(),
   activity_id uuid not null references sports_activities(id) on delete cascade,
@@ -168,7 +179,17 @@ create policy "sports_signups: family reads own child" on sports_signups
 create policy "sports_signups: student signs up own child" on sports_signups
   for insert with check (student_id = (select child_id from auth_profile()));
 
+create index if not exists idx_sports_signups_student on sports_signups(student_id);
+
 -- ── Verification (same pattern as 005/006 — run manually against a live project) ────
 -- A parent should only ever see behavior logs / picnic requests / ptm
 -- bookings / sports signups for their own linked child, never another
 -- family's rows; teachers/admins see the full class.
+
+-- ── Supporting indexes (student/class lookups happen on every dashboard load) ──
+create index if not exists idx_picnics_class on picnics(class);
+create index if not exists idx_picnic_requests_student on picnic_requests(student_id);
+create index if not exists idx_ptm_schedules_class on ptm_schedules(class);
+create index if not exists idx_ptm_bookings_student on ptm_bookings(student_id);
+create index if not exists idx_sports_activities_class on sports_activities(class);
+create index if not exists idx_sports_signups_student on sports_signups(student_id);

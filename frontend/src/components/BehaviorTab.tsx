@@ -21,10 +21,17 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 export default function BehaviorTab({ role }: { role: "teacher" | "student" | "parent" }) {
   const [logs, setLogs] = useState<BehaviorLog[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
-    const res = await apiGet<{ success: boolean; logs: BehaviorLog[] }>("/api/behavior");
-    setLogs(res.logs ?? []);
+    setError(null);
+    try {
+      const res = await apiGet<{ success: boolean; logs: BehaviorLog[] }>("/api/behavior");
+      setLogs(res.logs ?? []);
+    } catch {
+      setError("Couldn't load behavior notes right now — try again in a moment.");
+      setLogs((prev) => prev ?? []);
+    }
   }
 
   useEffect(() => {
@@ -45,6 +52,7 @@ export default function BehaviorTab({ role }: { role: "teacher" | "student" | "p
       )}
       <div>
         <SectionTitle>{role === "teacher" ? "Recent entries — your class" : "Behavior notes"}</SectionTitle>
+        {error && <p className="text-sm text-brick mb-3">{error}</p>}
         {!logs ? (
           <LoadingState />
         ) : logs.length === 0 ? (
@@ -75,31 +83,45 @@ export default function BehaviorTab({ role }: { role: "teacher" | "student" | "p
   );
 }
 
-function BehaviorForm({ onSaved }: { onSaved: () => void }) {
+function BehaviorForm({ onSaved }: { onSaved: () => void | Promise<void> }) {
   const [students, setStudents] = useState<Student[]>([]);
+  const [studentsError, setStudentsError] = useState(false);
   const [form, setForm] = useState({ studentId: "", category: "positive", note: "", rating: 5 });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    apiGet<{ success: boolean; students: Student[] }>("/api/teacher/students").then((res) =>
-      setStudents(res.students ?? [])
-    );
+    apiGet<{ success: boolean; students: Student[] }>("/api/teacher/students")
+      .then((res) => setStudents(res.students ?? []))
+      .catch(() => setStudentsError(true));
   }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.studentId || !form.note) return;
+    if (!form.studentId || !form.note.trim()) return;
     setSaving(true);
-    await apiPost("/api/teacher/behavior", form);
-    setForm({ studentId: "", category: "positive", note: "", rating: 5 });
-    setSaving(false);
-    setSaved(true);
-    onSaved();
+    setSaved(false);
+    setError(null);
+    try {
+      const res = await apiPost<{ success: boolean; message?: string }>("/api/teacher/behavior", form);
+      if (!res.success) {
+        setError(res.message || "Couldn't save this entry — try again.");
+        return;
+      }
+      setForm({ studentId: "", category: "positive", note: "", rating: 5 });
+      setSaved(true);
+      await onSaved();
+    } catch {
+      setError("Couldn't save this entry — check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <form onSubmit={submit} className="space-y-3 bg-paper-raised border border-line rounded-lg p-4">
+      {studentsError && <p className="text-xs text-brick">Couldn&apos;t load your class roster — refresh and try again.</p>}
       <select required value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper">
         <option value="">Select a student…</option>
         {students.map((s) => (
@@ -118,8 +140,9 @@ function BehaviorForm({ onSaved }: { onSaved: () => void }) {
         <input type="range" min={1} max={5} value={form.rating} onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })} className="flex-1" />
         <span className="text-sm text-ink w-6 text-right">{form.rating}</span>
       </div>
-      <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Log entry"}</Button>
+      <Button type="submit" disabled={saving || !form.studentId || !form.note.trim()}>{saving ? "Saving…" : "Log entry"}</Button>
       {saved && <p className="text-sm text-leaf">Saved.</p>}
+      {error && <p className="text-sm text-brick">{error}</p>}
     </form>
   );
 }

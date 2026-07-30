@@ -9,21 +9,31 @@ import { CLASS_OPTIONS } from "@/lib/classOptions";
 export default function SportsTab({ role }: { role: "teacher" | "student" }) {
   const [activities, setActivities] = useState<SportsActivity[] | null>(null);
   const [signups, setSignups] = useState<SportsSignup[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
-    const [a, s] = await Promise.all([
-      apiGet<{ success: boolean; activities: SportsActivity[] }>("/api/sports"),
-      role === "student"
-        ? apiGet<{ success: boolean; signups: SportsSignup[] }>("/api/sports-signups").catch(() => ({ success: false, signups: [] }))
-        : Promise.resolve({ success: true, signups: [] as SportsSignup[] }),
-    ]);
-    setActivities(a.activities ?? []);
-    setSignups(s.signups ?? []);
+    setError(null);
+    try {
+      // A teacher only needs signups per-activity (loaded on demand inside
+      // ActivityCard), so skip the extra "my signups" fetch for them here.
+      const [a, s] = await Promise.all([
+        apiGet<{ success: boolean; activities: SportsActivity[] }>("/api/sports"),
+        role === "student"
+          ? apiGet<{ success: boolean; signups: SportsSignup[] }>("/api/sports-signups")
+          : Promise.resolve({ success: true, signups: [] as SportsSignup[] }),
+      ]);
+      setActivities(a.activities ?? []);
+      setSignups(s.signups ?? []);
+    } catch {
+      setError("Couldn't load sports activities right now — try again in a moment.");
+      setActivities((prev) => prev ?? []);
+    }
   }
 
   useEffect(() => {
     refresh();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role]);
 
   if (!activities) return <LoadingState />;
 
@@ -32,6 +42,7 @@ export default function SportsTab({ role }: { role: "teacher" | "student" }) {
       {role === "teacher" && <TeacherCreateSports onSaved={refresh} />}
       <div>
         <SectionTitle>Sports activities</SectionTitle>
+        {error && <p className="text-sm text-brick mb-3">{error}</p>}
         {activities.length === 0 ? (
           <p className="text-sm text-ink-soft">No sports activities scheduled yet.</p>
         ) : (
@@ -55,21 +66,37 @@ function ActivityCard({
   activity: SportsActivity;
   role: "teacher" | "student";
   signedUp: boolean;
-  onChange: () => void;
+  onChange: () => void | Promise<void>;
 }) {
   const [signing, setSigning] = useState(false);
   const [signups, setSignups] = useState<SportsSignup[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function signup() {
     setSigning(true);
-    await apiPost("/api/student/sports-signup", { activityId: activity.id });
-    setSigning(false);
-    onChange();
+    setError(null);
+    try {
+      const res = await apiPost<{ success: boolean; message?: string }>("/api/student/sports-signup", { activityId: activity.id });
+      if (!res.success) {
+        setError(res.message || "Couldn't sign up — try again.");
+        return;
+      }
+      await onChange();
+    } catch {
+      setError("Couldn't sign up — check your connection and try again.");
+    } finally {
+      setSigning(false);
+    }
   }
 
   async function loadSignups() {
-    const res = await apiGet<{ success: boolean; signups: SportsSignup[] }>(`/api/sports-signups?activityId=${activity.id}`);
-    setSignups(res.signups ?? []);
+    setError(null);
+    try {
+      const res = await apiGet<{ success: boolean; signups: SportsSignup[] }>(`/api/sports-signups?activityId=${activity.id}`);
+      setSignups(res.signups ?? []);
+    } catch {
+      setError("Couldn't load sign-ups — try again.");
+    }
   }
 
   return (
@@ -85,6 +112,7 @@ function ActivityCard({
         </div>
       </div>
       {activity.description && <p className="text-sm text-ink-soft mt-2">{activity.description}</p>}
+      {error && <p className="text-xs text-brick mt-2">{error}</p>}
 
       {role === "student" && (
         <div className="mt-3">
@@ -111,18 +139,31 @@ function ActivityCard({
   );
 }
 
-function TeacherCreateSports({ onSaved }: { onSaved: () => void }) {
+function TeacherCreateSports({ onSaved }: { onSaved: () => void | Promise<void> }) {
   const [form, setForm] = useState({ title: "", description: "", class: "", category: "", scheduleDate: "", coachName: "" });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await apiPost("/api/teacher/sports", form);
-    setSaving(false);
-    setSaved(true);
-    onSaved();
+    setSaved(false);
+    setError(null);
+    try {
+      const res = await apiPost<{ success: boolean; message?: string }>("/api/teacher/sports", form);
+      if (!res.success) {
+        setError(res.message || "Couldn't add the activity — try again.");
+        return;
+      }
+      setSaved(true);
+      setForm({ title: "", description: "", class: "", category: "", scheduleDate: "", coachName: "" });
+      await onSaved();
+    } catch {
+      setError("Couldn't add the activity — check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -140,6 +181,7 @@ function TeacherCreateSports({ onSaved }: { onSaved: () => void }) {
         <input placeholder="Coach name" value={form.coachName} onChange={(e) => setForm({ ...form, coachName: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
         <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Add activity"}</Button>
         {saved && <p className="text-sm text-leaf">Activity added.</p>}
+        {error && <p className="text-sm text-brick">{error}</p>}
       </form>
     </div>
   );
