@@ -18,6 +18,7 @@ import BehaviorTab from "@/components/BehaviorTab";
 import PicnicTab from "@/components/PicnicTab";
 import PTMTab from "@/components/PTMTab";
 import SportsTab from "@/components/SportsTab";
+import HomeworkTeacherTab from "@/components/HomeworkTeacherTab";
 import { CLASS_OPTIONS } from "@/lib/classOptions";
 
 const TABS: ShellTab[] = [
@@ -77,7 +78,7 @@ export default function TeacherPage() {
       {tab === "picnic" && <PicnicTab role="teacher" />}
       {tab === "sports" && <SportsTab role="teacher" />}
       {tab === "ptm" && <PTMTab role="teacher" />}
-      {tab === "homework" && <HomeworkTab initial={dashboard?.homework} />}
+      {tab === "homework" && <HomeworkTeacherTab initial={dashboard?.homework} />}
       {tab === "announcements" && <AnnouncementsTab initial={dashboard?.announcements} />}
       {tab === "gatepasses" && <GatepassesTab />}
       {tab === "leave" && <LeaveReviewTab />}
@@ -263,63 +264,6 @@ function AttendanceTab() {
         {saving ? "Saving…" : "Save today's attendance"}
       </Button>
       {saved && <p className="text-sm text-leaf mt-2">Attendance saved.</p>}
-    </div>
-  );
-}
-
-function HomeworkTab({ initial }: { initial?: Homework[] }) {
-  const [homework, setHomework] = useState<Homework[] | undefined>(initial);
-  const [form, setForm] = useState({ title: "", subject: "", description: "", dueDate: "", points: 50 });
-  const [posting, setPosting] = useState(false);
-
-  async function refresh() {
-    const res = await apiGet<{ success: boolean; homework: Homework[] }>("/api/teacher/dashboard");
-    setHomework(res.homework);
-  }
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- standard fetch-on-mount
-    if (!homework) refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setPosting(true);
-    await apiPost("/api/homework", form);
-    setForm({ title: "", subject: "", description: "", dueDate: "", points: 50 });
-    await refresh();
-    setPosting(false);
-  }
-
-  return (
-    <div className="grid md:grid-cols-2 gap-6">
-      <div>
-        <SectionTitle>Assign homework</SectionTitle>
-        <form onSubmit={submit} className="space-y-3 bg-paper-raised border border-line rounded-lg p-4">
-          <input required placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
-          <input required placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
-          <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
-          <input required type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
-          <input type="number" min={0} placeholder="Points" value={form.points} onChange={(e) => setForm({ ...form, points: Number(e.target.value) })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
-          <Button type="submit" disabled={posting}>{posting ? "Posting…" : "Assign homework"}</Button>
-        </form>
-      </div>
-      <div>
-        <SectionTitle>Assigned homework</SectionTitle>
-        <div className="space-y-2">
-          {(homework ?? []).map((h) => (
-            <Card key={h.id}>
-              <p className="font-medium text-ink">{h.title}</p>
-              <p className="text-xs text-ink-soft">{h.subject} · due {new Date(h.due_date).toLocaleDateString()} · {h.points} pts</p>
-              <p className="text-sm text-ink-soft mt-1">{h.description}</p>
-              <p className="text-xs text-ink-soft mt-1">
-                {h.homework_submissions?.[0]?.count ?? 0} submissions
-              </p>
-            </Card>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

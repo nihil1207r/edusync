@@ -16,7 +16,7 @@ func (d *Deps) TeacherDashboard(c *fiber.Ctx) error {
 	class := d.classForUser(c)
 	_ = d.UserDB(c).Select("students", url.Values{"select": {"*"}, "class": {"eq." + class}}, &students)
 	_ = d.UserDB(c).Select("announcements", url.Values{"select": {"*"}, "order": {"created_at.desc"}, "limit": {"5"}}, &announcements)
-	_ = d.UserDB(c).Select("homework", url.Values{"select": {"*,homework_submissions(count)"}, "order": {"created_at.desc"}}, &homework)
+	_ = d.UserDB(c).Select("homework", url.Values{"select": {"*,homework_submissions(count)"}, "class": {"eq." + class}, "order": {"created_at.desc"}}, &homework)
 	_ = d.UserDB(c).Select("wellness", url.Values{"select": {"*"}, "order": {"created_at.desc"}, "limit": {"20"}}, &wellness)
 
 	sum := 0.0
@@ -98,6 +98,7 @@ func (d *Deps) PostHomework(c *fiber.Ctx) error {
 		Description string `json:"description"`
 		DueDate     string `json:"dueDate"`
 		Points      int    `json:"points"`
+		Class       string `json:"class"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return c.JSON(fiber.Map{"success": false, "message": "Invalid request body."})
@@ -105,10 +106,13 @@ func (d *Deps) PostHomework(c *fiber.Ctx) error {
 	if body.Points == 0 {
 		body.Points = 50
 	}
+	if body.Class == "" {
+		body.Class = d.classForUser(c)
+	}
 	user := middleware.UserFromLocals(c)
 	err := d.UserDB(c).Insert("homework", map[string]interface{}{
 		"title": body.Title, "subject": body.Subject, "description": body.Description,
-		"due_date": body.DueDate, "points": body.Points, "by_id": user.ID,
+		"due_date": body.DueDate, "points": body.Points, "by_id": user.ID, "class": body.Class,
 	}, false, nil)
 	if err != nil {
 		return c.JSON(fiber.Map{"success": false, "message": err.Error()})

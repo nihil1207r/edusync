@@ -64,7 +64,7 @@ func (d *Deps) DailySummary(c *fiber.Ctx) error {
 func (d *Deps) gatherDailySourceData(c *fiber.Ctx, studentID, today string) (map[string]interface{}, error) {
 	db := d.UserDB(c)
 	var student map[string]interface{}
-	if err := db.SelectOne("students", url.Values{"select": {"name"}, "id": {"eq." + studentID}}, &student); err != nil {
+	if err := db.SelectOne("students", url.Values{"select": {"name,class"}, "id": {"eq." + studentID}}, &student); err != nil {
 		return nil, err
 	}
 
@@ -72,7 +72,7 @@ func (d *Deps) gatherDailySourceData(c *fiber.Ctx, studentID, today string) (map
 	_ = db.SelectOne("attendance", url.Values{"select": {"status"}, "student_id": {"eq." + studentID}, "date": {"eq." + today}}, &attendanceToday)
 
 	var homework []map[string]interface{}
-	_ = db.Select("homework", url.Values{"select": {"id,title"}, "order": {"due_date.asc"}}, &homework)
+	_ = db.Select("homework", url.Values{"select": {"id,title"}, "class": {"eq." + toStr(student["class"])}, "order": {"due_date.asc"}}, &homework)
 
 	var submissions []map[string]interface{}
 	_ = db.Select("homework_submissions", url.Values{"select": {"homework_id"}, "student_id": {"eq." + studentID}}, &submissions)

@@ -67,7 +67,64 @@ export interface Homework {
   description: string;
   due_date: string;
   points: number;
+  class?: string;
   homework_submissions?: { count: number }[];
+}
+
+// ---- Phase 7: Teams-style homework — PDF turn-in + AI auto-eval ---------
+
+export interface HomeworkRosterRow {
+  studentId: string;
+  name: string;
+  rollNo: string;
+  turnedIn: boolean;
+  submissionId?: string;
+  submittedAt?: string;
+  fileName?: string;
+  marksAwarded?: number | null;
+  gradedBy?: string;
+  gradedAt?: string;
+  aiSuggestedScore?: number | null;
+  aiFeedback?: string;
+  aiMistakeTags?: string[];
+  aiGeneratedBy?: "llm" | "unavailable" | "error" | null;
+  late?: boolean;
+}
+
+export interface HomeworkMistakeTag {
+  tag: string;
+  count: number;
+  example: string;
+}
+
+export interface HomeworkInsight {
+  totalSubmissions: number;
+  aiEvaluatedCount: number;
+  mistakeTags: HomeworkMistakeTag[];
+  teachingSuggestions: string[];
+  averageSuggestedScore: number;
+  averageMarksAwarded: number;
+  gradedCount: number;
+}
+
+export interface HomeworkAiMistake {
+  tag: string;
+  explanation: string;
+}
+
+export interface MyHomeworkSubmission {
+  id: string;
+  submitted_at: string;
+  file_name: string;
+  marks_awarded?: number | null;
+  graded_by?: string;
+  graded_at?: string;
+  ai_suggested_score?: number | null;
+  ai_feedback?: string;
+  ai_mistakes?: HomeworkAiMistake[];
+  ai_strengths?: string[];
+  ai_generated_by?: "llm" | "unavailable" | "error" | null;
+  ai_evaluated_at?: string;
 }
 
 export interface Wellness {

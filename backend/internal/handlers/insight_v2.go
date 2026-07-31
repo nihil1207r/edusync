@@ -57,8 +57,12 @@ func (d *Deps) Inbox(c *fiber.Ctx) error {
 		})
 	}
 
+	homeworkQuery := url.Values{"select": {"*"}, "order": {"created_at.desc"}, "limit": {"20"}}
+	if user.Role != "admin" {
+		homeworkQuery.Set("class", "eq."+d.classForUser(c))
+	}
 	var homework []map[string]interface{}
-	_ = d.UserDB(c).Select("homework", url.Values{"select": {"*"}, "order": {"created_at.desc"}, "limit": {"20"}}, &homework)
+	_ = d.UserDB(c).Select("homework", homeworkQuery, &homework)
 	for _, h := range homework {
 		items = append(items, fiber.Map{
 			"type": "homework", "id": h["id"], "title": h["title"], "body": h["subject"],

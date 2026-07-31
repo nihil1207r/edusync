@@ -281,9 +281,9 @@ func (d *Deps) Seed(c *fiber.Ctx) error {
 
 	var hwData []homeworkRow
 	_ = d.DB.Upsert("homework", []map[string]interface{}{
-		{"title": "Math Chapter 5 Exercise", "subject": "Mathematics", "description": "Complete exercises 5.1 to 5.4", "due_date": time.Now().Add(24 * time.Hour).Format(time.RFC3339), "points": 50},
-		{"title": "Science Lab Report", "subject": "Science", "description": "Write lab report on photosynthesis", "due_date": time.Now().Add(48 * time.Hour).Format(time.RFC3339), "points": 75},
-		{"title": "English Essay", "subject": "English", "description": "Write 500 word essay on climate change", "due_date": time.Now().Add(72 * time.Hour).Format(time.RFC3339), "points": 60},
+		{"title": "Math Chapter 5 Exercise", "subject": "Mathematics", "description": "Complete exercises 5.1 to 5.4", "due_date": time.Now().Add(24 * time.Hour).Format(time.RFC3339), "points": 50, "class": "10A"},
+		{"title": "Science Lab Report", "subject": "Science", "description": "Write lab report on photosynthesis", "due_date": time.Now().Add(48 * time.Hour).Format(time.RFC3339), "points": 75, "class": "10A"},
+		{"title": "English Essay", "subject": "English", "description": "Write 500 word essay on climate change", "due_date": time.Now().Add(72 * time.Hour).Format(time.RFC3339), "points": 60, "class": "10A"},
 	}, "", true, &hwData)
 
 	if len(hwData) >= 2 && len(students) >= 2 {

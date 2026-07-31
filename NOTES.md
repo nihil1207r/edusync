@@ -1,8 +1,66 @@
 # NOTES
 
-## Phase 6 (hackathon feature pass): Principal rename, classes 1–12, Social
-## Behavior, Picnics, PTM schedule, Sports activities
+## Phase 7 (hackathon feature pass): "Teams-style" homework — PDF turn-in,
+## teacher grading, AI auto-evaluation, and class-wide mistake insight
 
+- **Homework now has a real turn-in flow, not just a "submitted" toggle.**
+  Students attach an actual PDF; the backend validates it's really a PDF
+  (checks the `%PDF` magic bytes, not just the file extension), caps it at
+  ~9MB, and stores a real `submitted_at` timestamp. Teachers post
+  assignments with a proper **date + time** due date (a `datetime-local`
+  input converted to a real ISO instant client-side, not just a date) and a
+  points value.
+- **No object-storage bucket is configured in this environment** (same
+  constraint already noted for the Documents feature back in migrations/005)
+  — so the PDF itself is stored as base64 directly in the
+  `homework_submissions` row, not in a separate bucket. Fine at hackathon
+  scale; the roster/list endpoints deliberately exclude the base64 field and
+  a dedicated `GetSubmissionFile` endpoint fetches it lazily, so viewing a
+  30-student roster doesn't ship 30 PDFs' worth of payload every time.
+- **`homework` gained a `class` column it never had before** — every
+  assignment used to be school-wide regardless of who posted it, which
+  didn't fit a real multi-class 1–12 school (see Phase 6). It now defaults
+  to the teacher's own class, and the student dashboard, teacher dashboard,
+  daily-summary generator, and Inbox feed were all updated to filter
+  homework by class instead of showing everyone everything.
+- **Real AI auto-evaluation, not a fabricated one.** A background goroutine
+  (spawned right after submission, using the service-role DB client — never
+  the request-scoped one, since Fiber's `*fiber.Ctx` is gone by the time a
+  goroutine would use it) sends the submitted PDF itself — not OCR'd/
+  extracted text, the actual PDF bytes as inline multimodal input, so
+  scanned or handwritten pages are covered too — to Gemini alongside the
+  assignment's own title/subject/instructions/points, and asks for strict
+  JSON: a suggested score, 2-4 sentences of feedback addressed to the
+  student, a list of `{tag, explanation}` mistakes, and strengths. This
+  reuses the exact `GEMINI_API_KEY` / honest-fallback pattern already
+  established in `insight.go`'s `generateSummaryViaLLM` — if the key isn't
+  set, or the call errors, the submission is marked `ai_generated_by:
+  "unavailable"`/`"error"` and shown to both student and teacher as exactly
+  that, never a fabricated grade or feedback.
+- **The AI's suggested score is a suggestion, never the final grade.** The
+  teacher's roster view shows both side by side and pre-fills the marks
+  input with the AI's number as a starting point they can accept or
+  override; the student view labels the AI section "first look... this is
+  not your final grade" and only shows a real grade once a teacher has
+  actually graded it.
+- **Class-wide mistake insight is the actual "how do I teach better" part.**
+  Every AI evaluation's mistake tags (short, deliberately generic strings
+  like "sign error in algebra" so the same tag applies across different
+  students' wording) are aggregated per-assignment. A tag only one student
+  hit is just that student's note; a tag ≥2 students hit independently
+  surfaces as "N students made the same mistake — consider revisiting this
+  in class" in the teacher's Class Insight panel, alongside the average
+  AI-suggested score and average final grade for the whole assignment.
+- Verified: `go build ./...` / `go vet ./...` clean; frontend
+  `tsc --noEmit` clean; `eslint` on the new files is clean except the same
+  project-wide `react-hooks/set-state-in-effect` fetch-on-mount pattern
+  already present throughout this codebase (see the Phase 6.1 note below)
+  — genuinely new lint findings from this pass (two `react-hooks/purity`
+  violations from calling `Date.now()` directly during render, to compute
+  an "overdue" badge) were fixed by computing it once via
+  `useState(() => Date.now())` instead.
+
+## Phase 6 (hackathon feature pass): Principal rename, classes 1-12, Social
 - **Admin → Principal**: the UI-facing label is now "Principal" everywhere
   (nav, dashboard title, login demo button). The underlying `role` value in
   the database/session is still `admin` — renaming the actual role string
@@ -60,6 +118,43 @@
 
 Honest accounting of what's real, what's stubbed, and what's out of scope in
 this pass — so nothing here is silently faked.
+
+## Phase 6.1 (follow-up pass): picnic-request correctness + efficiency/robustness
+
+- **Real bug fixed**: the parent "picnic form" (`SubmitPicnicConsent`) was
+  implemented as an *upsert* that always wrote `status: "pending"` -- so if a
+  parent (re)submitted the consent form **after** a teacher had already
+  approved or rejected the request, it silently reverted that decision back
+  to pending. It's now a plain `UPDATE` that only touches `parent_consent`/
+  `parent_note`, and returns a clear error if the student hasn't requested
+  that picnic yet (matching what the frontend already assumes).
+- **Server-side PTM validation**: `CreatePTM` now rejects `endTime <=
+  startTime` instead of silently accepting a nonsensical schedule; the
+  frontend form checks the same thing before submitting.
+- **Fewer network calls**: `PicnicTab` and `SportsTab` used to always fetch
+  "my requests"/"my signups" even for a teacher, who never uses that data
+  (they browse requests per-picnic/per-activity instead). Both now skip
+  that fetch for the teacher role -- one API call instead of two on load.
+- **No more stuck buttons**: every write action (request picnic, give/decline
+  consent, sign up for sports, book a PTM slot, log behavior, create
+  picnic/PTM/sports-activity) is now wrapped in try/catch/finally, so a
+  network error or a `{success:false}` response resets the button instead of
+  leaving it stuck on "Saving..." forever -- and the backend's own error
+  message (e.g. "No student linked.") is now actually shown to the user
+  instead of being silently swallowed.
+- Small correctness touches: teacher's Approve/Reject buttons disable once
+  that status is already set (no pointless duplicate calls); cancelled
+  picnics no longer show a "Request to join" button.
+- Added indexes (`student_id` on `picnic_requests`/`ptm_bookings`/
+  `sports_signups`, `class` on `picnics`/`ptm_schedules`/`sports_activities`)
+  to the Phase 6 migration for the lookups these new tabs actually do.
+- Re-verified after this pass: `go build ./...` / `go vet ./...` clean;
+  frontend `tsc --noEmit` clean. `eslint` still flags the same
+  `react-hooks/set-state-in-effect` pattern on the four new tabs that
+  already exists project-wide on every other tab component in this
+  codebase (`ClassroomEnergyTab`, `FriendshipTab`, `TimetableTab`, etc.) --
+  a stricter rule shipped in a newer `eslint-plugin-react-hooks` than this
+  repo was last checked against, not something introduced by this pass.
 
 ## Gamification additions (post-Phase-5 addendum)
 

@@ -28,10 +28,10 @@ func (d *Deps) StudentDashboard(c *fiber.Ctx) error {
 
 	_ = d.UserDB(c).Select("grades", url.Values{"select": {"*"}, "student_id": {"eq." + childID}}, &grades)
 	_ = d.UserDB(c).Select("attendance", url.Values{"select": {"*"}, "student_id": {"eq." + childID}, "order": {"date.desc"}, "limit": {"7"}}, &attendance)
-	_ = d.UserDB(c).Select("homework", url.Values{"select": {"*"}, "order": {"due_date.asc"}}, &homework)
+	_ = d.UserDB(c).SelectOne("students", url.Values{"select": {"*"}, "id": {"eq." + childID}}, &student)
+	_ = d.UserDB(c).Select("homework", url.Values{"select": {"*"}, "class": {"eq." + toStr(student["class"])}, "order": {"due_date.asc"}}, &homework)
 	_ = d.UserDB(c).Select("announcements", url.Values{"select": {"*"}, "order": {"created_at.desc"}, "limit": {"5"}}, &announcements)
 	_ = d.UserDB(c).Select("homework_submissions", url.Values{"select": {"homework_id"}, "student_id": {"eq." + childID}}, &submissions)
-	_ = d.UserDB(c).SelectOne("students", url.Values{"select": {"*"}, "id": {"eq." + childID}}, &student)
 
 	merged := map[string]interface{}{}
 	for k, v := range profile {
@@ -80,48 +80,6 @@ func (d *Deps) PostWellness(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"success": false, "message": err.Error()})
 	}
 	return c.JSON(fiber.Map{"success": true})
-}
-
-func (d *Deps) SubmitHomework(c *fiber.Ctx) error {
-	var body struct {
-		HomeworkID string `json:"homeworkId"`
-	}
-	if err := c.BodyParser(&body); err != nil {
-		return c.JSON(fiber.Map{"success": false, "message": "Invalid request body."})
-	}
-
-	user := middleware.UserFromLocals(c)
-	var profile map[string]interface{}
-	_ = d.UserDB(c).SelectOne("profiles", url.Values{"select": {"child_id"}, "id": {"eq." + user.ID}}, &profile)
-	studentID, _ := profile["child_id"].(string)
-
-	if err := d.UserDB(c).Upsert("homework_submissions", map[string]interface{}{
-		"homework_id": body.HomeworkID, "student_id": studentID,
-	}, "homework_id,student_id", false, nil); err != nil {
-		return c.JSON(fiber.Map{"success": false, "message": err.Error()})
-	}
-
-	var hw map[string]interface{}
-	_ = d.UserDB(c).SelectOne("homework", url.Values{"select": {"points"}, "id": {"eq." + body.HomeworkID}}, &hw)
-	points := 50
-	if p, ok := hw["points"].(float64); ok {
-		points = int(p)
-	}
-
-	var student map[string]interface{}
-	_ = d.UserDB(c).SelectOne("students", url.Values{"select": {"points"}, "id": {"eq." + studentID}}, &student)
-	current := 0
-	if p, ok := student["points"].(float64); ok {
-		current = int(p)
-	}
-
-	if err := d.UserDB(c).Update("students", url.Values{"id": {"eq." + studentID}}, map[string]interface{}{
-		"points": current + points,
-	}); err != nil {
-		return c.JSON(fiber.Map{"success": false, "message": err.Error()})
-	}
-
-	return c.JSON(fiber.Map{"success": true, "pointsEarned": points})
 }
 
 func (d *Deps) PostGatepass(c *fiber.Ctx) error {

@@ -20,6 +20,7 @@ import GamificationTab from "@/components/AchievementsTab";
 import SkillTreeTab from "@/components/SkillTreeTab";
 import PicnicTab from "@/components/PicnicTab";
 import SportsTab from "@/components/SportsTab";
+import HomeworkStudentTab from "@/components/HomeworkStudentTab";
 
 const TABS: ShellTab[] = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard" },
@@ -87,7 +88,7 @@ export default function StudentPage() {
       {tab === "documents" && <DocumentsTab />}
       {tab === "memory" && <SchoolMemoryTab />}
       {tab === "meetingprep" && <MeetingPrepView />}
-      {tab === "homework" && <HomeworkTab homework={data.homework} submittedIds={data.submittedIds} onSubmitted={refresh} />}
+      {tab === "homework" && <HomeworkStudentTab homework={data.homework} submittedIds={data.submittedIds} onSubmitted={refresh} />}
       {tab === "attendance" && <AttendanceTab attendance={data.attendance} />}
       {tab === "wellness" && <WellnessTab />}
       {tab === "gatepass" && <GatepassTab />}
@@ -147,56 +148,6 @@ function GradesTab({ grades }: { grades: Grade[] }) {
           <Stamp grade={g.grade} />
         </Card>
       ))}
-    </div>
-  );
-}
-
-function HomeworkTab({
-  homework,
-  submittedIds,
-  onSubmitted,
-}: {
-  homework: Homework[];
-  submittedIds: string[];
-  onSubmitted: () => void;
-}) {
-  const [submitting, setSubmitting] = useState<string | null>(null);
-  const [earned, setEarned] = useState<number | null>(null);
-
-  async function submit(id: string) {
-    setSubmitting(id);
-    const res = await apiPost<{ success: boolean; pointsEarned?: number }>("/api/homework/submit", { homeworkId: id });
-    if (res.success && res.pointsEarned) setEarned(res.pointsEarned);
-    await onSubmitted();
-    setSubmitting(null);
-  }
-
-  return (
-    <div>
-      {earned !== null && <p className="text-sm text-leaf mb-3">+{earned} points earned!</p>}
-      <div className="space-y-2">
-        {homework.map((h) => {
-          const done = submittedIds.includes(h.id);
-          return (
-            <Card key={h.id}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-ink">{h.title}</p>
-                  <p className="text-xs text-ink-soft">{h.subject} · due {new Date(h.due_date).toLocaleDateString()} · {h.points} pts</p>
-                  <p className="text-sm text-ink-soft mt-1">{h.description}</p>
-                </div>
-                {done ? (
-                  <Pill tone="leaf">Submitted</Pill>
-                ) : (
-                  <Button onClick={() => submit(h.id)} disabled={submitting === h.id}>
-                    {submitting === h.id ? "Submitting…" : "Submit"}
-                  </Button>
-                )}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
     </div>
   );
 }
