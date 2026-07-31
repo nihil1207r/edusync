@@ -1,5 +1,34 @@
 # NOTES
 
+## Phase 7.1 (follow-up pass): teachers can attach the question paper itself
+
+- **New migration** `012_homework_question_paper.sql`: adds
+  `question_file_name`/`question_file_base64`/`question_file_size_bytes` to
+  `homework` — same storage tradeoff as submissions (no object-storage
+  bucket configured here, so it's base64 in the row; see Phase 7 notes
+  below). Idempotent, safe to re-run.
+- **Assigning homework now has an optional "Question paper (PDF)" upload**
+  alongside the text title/subject/instructions. Both students and teachers
+  can open it from an assignment (`GetHomeworkQuestionFile`, same
+  lazy-fetch-on-click pattern as `GetSubmissionFile` — never bundled into
+  the homework list responses, which use a shared `homeworkSummaryColumns`
+  constant that deliberately excludes both PDF-bytes columns).
+- **This meaningfully improves the AI grading, not just the UI.** When a
+  question paper was attached, `callGeminiGradeHomework` now sends it to
+  Gemini as a second inline PDF alongside the student's submission, and the
+  prompt tells the model to treat the question paper as the authoritative
+  source of what was actually asked (more specific than the short text
+  description — especially for anything with diagrams, exact numbers, or
+  multi-part questions a text description wouldn't fully capture).
+- Extracted a shared `decodeAndValidatePdf`/`capitalizePdfError` pair so the
+  "is this really a PDF, and not too big" check and its user-facing error
+  message are identical for both the teacher's question-paper upload and
+  the student's submission upload, instead of two near-duplicate copies.
+- Verified: `go build ./...` / `go vet ./...` clean; frontend
+  `tsc --noEmit` clean; eslint on the new/changed files shows only the same
+  project-wide `react-hooks/set-state-in-effect` fetch-on-mount pattern
+  already present throughout this codebase — no new findings.
+
 ## Phase 7 (hackathon feature pass): "Teams-style" homework — PDF turn-in,
 ## teacher grading, AI auto-evaluation, and class-wide mistake insight
 

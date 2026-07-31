@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "@/lib/api";
 import { Card, SectionTitle, Button, Pill, LoadingState } from "@/components/ui";
-import { openPdfFromBase64 } from "@/lib/pdf";
+import { openPdfFromBase64, fileToBase64 } from "@/lib/pdf";
+import QuestionPaperButton from "@/components/QuestionPaperButton";
 import type { Homework, HomeworkRosterRow, HomeworkInsight } from "@/lib/types";
 import { CLASS_OPTIONS } from "@/lib/classOptions";
 
@@ -57,6 +58,11 @@ export default function HomeworkTeacherTab({ initial }: { initial?: Homework[] }
                       <Pill tone="accent">{h.homework_submissions?.[0]?.count ?? 0} turned in</Pill>
                     </div>
                     {h.description && <p className="text-sm text-ink-soft mt-1">{h.description}</p>}
+                    {h.question_file_name && (
+                      <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                        <QuestionPaperButton homeworkId={h.id} fileName={h.question_file_name} />
+                      </div>
+                    )}
                   </Card>
                   </div>
                 ))}
@@ -73,12 +79,17 @@ export default function HomeworkTeacherTab({ initial }: { initial?: Homework[] }
 
 function AssignHomeworkForm({ onSaved }: { onSaved: () => void | Promise<void> }) {
   const [form, setForm] = useState({ title: "", subject: "", description: "", class: "", dueDate: "", points: 50 });
+  const [questionFile, setQuestionFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (questionFile && questionFile.type !== "application/pdf") {
+      setError("The question paper must be a PDF.");
+      return;
+    }
     setSaving(true);
     setSaved(false);
     setError(null);
@@ -88,13 +99,17 @@ function AssignHomeworkForm({ onSaved }: { onSaved: () => void | Promise<void> }
       // so "due 11:59 PM" means the same moment for every student, not
       // whatever the DB server's session timezone happens to default to.
       const dueDateIso = form.dueDate ? new Date(form.dueDate).toISOString() : "";
-      const res = await apiPost<{ success: boolean; message?: string }>("/api/homework", { ...form, dueDate: dueDateIso });
+      const questionFileBase64 = questionFile ? await fileToBase64(questionFile) : "";
+      const res = await apiPost<{ success: boolean; message?: string }>("/api/homework", {
+        ...form, dueDate: dueDateIso, questionFileBase64, questionFileName: questionFile?.name ?? "",
+      });
       if (!res.success) {
         setError(res.message || "Couldn't assign this homework — try again.");
         return;
       }
       setSaved(true);
       setForm({ title: "", subject: "", description: "", class: "", dueDate: "", points: 50 });
+      setQuestionFile(null);
       await onSaved();
     } catch {
       setError("Couldn't assign this homework — check your connection and try again.");
@@ -114,6 +129,17 @@ function AssignHomeworkForm({ onSaved }: { onSaved: () => void | Promise<void> }
         <input required placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
         <input required placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
         <textarea placeholder="Instructions for students (this is also what the AI grades against)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper" />
+        <div>
+          <label className="text-xs text-ink-soft block mb-1">Question paper (optional PDF)</label>
+          <input
+            type="file" accept="application/pdf"
+            onChange={(e) => setQuestionFile(e.target.files?.[0] ?? null)}
+            className="w-full text-sm text-ink-soft file:mr-3 file:rounded file:border file:border-line file:bg-paper file:px-3 file:py-1.5 file:text-sm file:text-ink"
+          />
+          <p className="text-xs text-ink-soft mt-1">
+            If attached, students can view it and the AI grades against the real questions, not just the text above.
+          </p>
+        </div>
         <select value={form.class} onChange={(e) => setForm({ ...form, class: e.target.value })} className="w-full border border-line rounded px-3 py-2 bg-paper">
           <option value="">My class (default)</option>
           {CLASS_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -184,7 +210,10 @@ function HomeworkRoster({ homework, onBack }: { homework: Homework; onBack: () =
             {homework.subject} · {homework.class} · due {new Date(homework.due_date).toLocaleString()} · out of {homework.points} pts
           </p>
         </div>
-        <Button variant="secondary" onClick={refresh}>Refresh</Button>
+        <div className="flex items-center gap-2">
+          {homework.question_file_name && <QuestionPaperButton homeworkId={homework.id} fileName={homework.question_file_name} />}
+          <Button variant="secondary" onClick={refresh}>Refresh</Button>
+        </div>
       </div>
       {error && <p className="text-sm text-brick mb-3">{error}</p>}
 

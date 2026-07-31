@@ -68,6 +68,8 @@ export interface Homework {
   due_date: string;
   points: number;
   class?: string;
+  question_file_name?: string | null;
+  question_file_size_bytes?: number | null;
   homework_submissions?: { count: number }[];
 }
 

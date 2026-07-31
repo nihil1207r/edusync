@@ -46,7 +46,7 @@ func (d *Deps) AdminStats(c *fiber.Ctx) error {
 	// admin/page.tsx) — the roster itself is the only thing needed here.
 	_ = d.UserDB(c).Select("students", url.Values{"select": {"*"}}, &students)
 	_ = d.UserDB(c).Select("wellness", url.Values{"select": {"*"}, "order": {"created_at.desc"}, "limit": {"20"}}, &wellness)
-	_ = d.UserDB(c).Select("homework", url.Values{"select": {"*,homework_submissions(count)"}}, &homework)
+	_ = d.UserDB(c).Select("homework", url.Values{"select": {homeworkSummaryColumns + ",homework_submissions(count)"}}, &homework)
 
 	wellness = orEmpty(wellness)
 	avgMood := "0"

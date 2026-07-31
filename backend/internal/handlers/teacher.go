@@ -16,7 +16,7 @@ func (d *Deps) TeacherDashboard(c *fiber.Ctx) error {
 	class := d.classForUser(c)
 	_ = d.UserDB(c).Select("students", url.Values{"select": {"*"}, "class": {"eq." + class}}, &students)
 	_ = d.UserDB(c).Select("announcements", url.Values{"select": {"*"}, "order": {"created_at.desc"}, "limit": {"5"}}, &announcements)
-	_ = d.UserDB(c).Select("homework", url.Values{"select": {"*,homework_submissions(count)"}, "class": {"eq." + class}, "order": {"created_at.desc"}}, &homework)
+	_ = d.UserDB(c).Select("homework", url.Values{"select": {homeworkSummaryColumns + ",homework_submissions(count)"}, "class": {"eq." + class}, "order": {"created_at.desc"}}, &homework)
 	_ = d.UserDB(c).Select("wellness", url.Values{"select": {"*"}, "order": {"created_at.desc"}, "limit": {"20"}}, &wellness)
 
 	sum := 0.0
@@ -93,12 +93,14 @@ func (d *Deps) PostAnnouncement(c *fiber.Ctx) error {
 
 func (d *Deps) PostHomework(c *fiber.Ctx) error {
 	var body struct {
-		Title       string `json:"title"`
-		Subject     string `json:"subject"`
-		Description string `json:"description"`
-		DueDate     string `json:"dueDate"`
-		Points      int    `json:"points"`
-		Class       string `json:"class"`
+		Title              string `json:"title"`
+		Subject            string `json:"subject"`
+		Description        string `json:"description"`
+		DueDate            string `json:"dueDate"`
+		Points             int    `json:"points"`
+		Class              string `json:"class"`
+		QuestionFileBase64 string `json:"questionFileBase64"`
+		QuestionFileName   string `json:"questionFileName"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return c.JSON(fiber.Map{"success": false, "message": "Invalid request body."})
@@ -109,11 +111,27 @@ func (d *Deps) PostHomework(c *fiber.Ctx) error {
 	if body.Class == "" {
 		body.Class = d.classForUser(c)
 	}
-	user := middleware.UserFromLocals(c)
-	err := d.UserDB(c).Insert("homework", map[string]interface{}{
+	row := map[string]interface{}{
 		"title": body.Title, "subject": body.Subject, "description": body.Description,
-		"due_date": body.DueDate, "points": body.Points, "by_id": user.ID, "class": body.Class,
-	}, false, nil)
+		"due_date": body.DueDate, "points": body.Points, "class": body.Class,
+	}
+	// The question paper is optional — a teacher may prefer to just
+	// describe the assignment in the text instructions instead.
+	if body.QuestionFileBase64 != "" {
+		decoded, cleaned, err := decodeAndValidatePdf(body.QuestionFileBase64)
+		if err != nil {
+			return c.JSON(fiber.Map{"success": false, "message": capitalizePdfError(err)})
+		}
+		if body.QuestionFileName == "" {
+			body.QuestionFileName = "question-paper.pdf"
+		}
+		row["question_file_base64"] = cleaned
+		row["question_file_name"] = body.QuestionFileName
+		row["question_file_size_bytes"] = len(decoded)
+	}
+	user := middleware.UserFromLocals(c)
+	row["by_id"] = user.ID
+	err := d.UserDB(c).Insert("homework", row, false, nil)
 	if err != nil {
 		return c.JSON(fiber.Map{"success": false, "message": err.Error()})
 	}

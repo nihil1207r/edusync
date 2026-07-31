@@ -40,6 +40,44 @@ import (
 
 const maxSubmissionBase64Len = 12_000_000 // ~9MB decoded — generous for a homework PDF, small enough for a Postgres text column + PostgREST's payload limit
 
+// homeworkSummaryColumns is used everywhere homework is *listed* (student
+// dashboard, teacher dashboard, admin dashboard, roster header) — it
+// deliberately excludes question_file_base64, the one potentially-large
+// field, so loading a list of assignments doesn't ship every question
+// paper's PDF bytes along with it. GetHomeworkQuestionFile fetches that one
+// field lazily, same pattern as GetSubmissionFile for student submissions.
+const homeworkSummaryColumns = "id,title,subject,description,due_date,points,class,by_id,created_at,question_file_name,question_file_size_bytes"
+
+// capitalizePdfError turns one of decodeAndValidatePdf's lowercase-starting
+// Go-style errors into a proper user-facing sentence for a JSON message.
+func capitalizePdfError(err error) string {
+	msg := err.Error()
+	if msg == "" {
+		return "Invalid PDF."
+	}
+	return strings.ToUpper(msg[:1]) + msg[1:] + "."
+}
+
+// decodeAndValidatePdf strips an optional "data:application/pdf;base64,"
+// prefix, base64-decodes, and checks the %PDF magic bytes — shared by both
+// the teacher's question-paper upload and the student's submission upload
+// so both get exactly the same "is this actually a PDF, and not too big"
+// check rather than two slightly-different copies of it.
+func decodeAndValidatePdf(base64Data string) (decoded []byte, cleaned string, err error) {
+	cleaned = strings.TrimPrefix(base64Data, "data:application/pdf;base64,")
+	if cleaned == "" {
+		return nil, "", fmt.Errorf("no file attached")
+	}
+	if len(cleaned) > maxSubmissionBase64Len {
+		return nil, "", fmt.Errorf("that PDF is too large (max ~9MB) — try compressing it")
+	}
+	decoded, err = base64.StdEncoding.DecodeString(cleaned)
+	if err != nil || len(decoded) < 4 || string(decoded[:4]) != "%PDF" {
+		return nil, "", fmt.Errorf("that doesn't look like a valid PDF file")
+	}
+	return decoded, cleaned, nil
+}
+
 // SubmitHomework now accepts (and requires) a PDF attachment: fileBase64
 // (no "data:application/pdf;base64," prefix — just the raw base64) and
 // fileName. It stores the submission with a real submitted_at, then kicks
@@ -53,17 +91,14 @@ func (d *Deps) SubmitHomework(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil || body.HomeworkID == "" {
 		return c.JSON(fiber.Map{"success": false, "message": "homeworkId is required."})
 	}
-	body.FileBase64 = strings.TrimPrefix(body.FileBase64, "data:application/pdf;base64,")
-	if body.FileBase64 == "" || body.FileName == "" {
+	if body.FileName == "" {
 		return c.JSON(fiber.Map{"success": false, "message": "Attach your homework as a PDF before submitting."})
 	}
-	if len(body.FileBase64) > maxSubmissionBase64Len {
-		return c.JSON(fiber.Map{"success": false, "message": "That PDF is too large (max ~9MB). Try compressing it and submit again."})
+	decoded, cleanedBase64, err := decodeAndValidatePdf(body.FileBase64)
+	if err != nil {
+		return c.JSON(fiber.Map{"success": false, "message": capitalizePdfError(err)})
 	}
-	decoded, err := base64.StdEncoding.DecodeString(body.FileBase64)
-	if err != nil || len(decoded) < 4 || string(decoded[:4]) != "%PDF" {
-		return c.JSON(fiber.Map{"success": false, "message": "That doesn't look like a valid PDF file."})
-	}
+	body.FileBase64 = cleanedBase64
 
 	studentID, err := d.resolveStudentIDForUser(c)
 	if err != nil || studentID == "" {
@@ -72,7 +107,7 @@ func (d *Deps) SubmitHomework(c *fiber.Ctx) error {
 
 	var homework map[string]interface{}
 	if err := d.UserDB(c).SelectOne("homework", url.Values{
-		"select": {"title,subject,description,points"}, "id": {"eq." + body.HomeworkID},
+		"select": {"title,subject,description,points,question_file_base64"}, "id": {"eq." + body.HomeworkID},
 	}, &homework); err != nil || homework == nil {
 		return c.JSON(fiber.Map{"success": false, "message": "Homework not found."})
 	}
@@ -109,7 +144,8 @@ func (d *Deps) SubmitHomework(c *fiber.Ctx) error {
 			title, _ := homework["title"].(string)
 			subject, _ := homework["subject"].(string)
 			description, _ := homework["description"].(string)
-			go evaluateSubmissionInBackground(d.DB, subID, body.FileBase64, title, subject, description, points)
+			questionFileBase64, _ := homework["question_file_base64"].(string)
+			go evaluateSubmissionInBackground(d.DB, subID, body.FileBase64, questionFileBase64, title, subject, description, points)
 		}
 	}
 
@@ -130,7 +166,7 @@ func (d *Deps) GetHomeworkSubmissions(c *fiber.Ctx) error {
 	db := d.UserDB(c)
 
 	var homework map[string]interface{}
-	if err := db.SelectOne("homework", url.Values{"select": {"*"}, "id": {"eq." + homeworkID}}, &homework); err != nil || homework == nil {
+	if err := db.SelectOne("homework", url.Values{"select": {homeworkSummaryColumns}, "id": {"eq." + homeworkID}}, &homework); err != nil || homework == nil {
 		return c.JSON(fiber.Map{"success": false, "message": "Homework not found."})
 	}
 	class, _ := homework["class"].(string)
@@ -234,6 +270,29 @@ func (d *Deps) GetSubmissionFile(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"success": false, "message": "Submission not found."})
 	}
 	return c.JSON(fiber.Map{"success": true, "fileName": submission["file_name"], "fileBase64": submission["file_base64"]})
+}
+
+// GetHomeworkQuestionFile lazily fetches the question-paper PDF a teacher
+// attached when assigning the homework (if any) — kept out of the
+// homework list/summary responses for the same payload-size reason as
+// GetSubmissionFile. Any logged-in role can read it (RLS on `homework`
+// already lets everyone read homework rows; this just exposes the one
+// heavy column on demand).
+func (d *Deps) GetHomeworkQuestionFile(c *fiber.Ctx) error {
+	homeworkID := c.Query("homeworkId")
+	if homeworkID == "" {
+		return c.JSON(fiber.Map{"success": false, "message": "homeworkId is required."})
+	}
+	var homework map[string]interface{}
+	if err := d.UserDB(c).SelectOne("homework", url.Values{
+		"select": {"question_file_name,question_file_base64"}, "id": {"eq." + homeworkID},
+	}, &homework); err != nil || homework == nil {
+		return c.JSON(fiber.Map{"success": false, "message": "Homework not found."})
+	}
+	if homework["question_file_base64"] == nil {
+		return c.JSON(fiber.Map{"success": false, "message": "No question paper was attached to this homework."})
+	}
+	return c.JSON(fiber.Map{"success": true, "fileName": homework["question_file_name"], "fileBase64": homework["question_file_base64"]})
 }
 
 // GetMyHomeworkSubmission is the student-facing detail view of their own
@@ -390,7 +449,7 @@ type homeworkGradeResult struct {
 // score or feedback — honest silence, same principle as generateSummary's
 // rules-fallback, just with no rules-based homework grader to fall back to
 // (grading requires actually reading the PDF, which a template can't do).
-func evaluateSubmissionInBackground(db *supabase.Client, submissionID, fileBase64, title, subject, description string, maxPoints int) {
+func evaluateSubmissionInBackground(db *supabase.Client, submissionID, fileBase64, questionFileBase64, title, subject, description string, maxPoints int) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
 		_ = db.Update("homework_submissions", url.Values{"id": {"eq." + submissionID}}, map[string]interface{}{
@@ -399,7 +458,7 @@ func evaluateSubmissionInBackground(db *supabase.Client, submissionID, fileBase6
 		return
 	}
 
-	result, err := callGeminiGradeHomework(apiKey, fileBase64, title, subject, description, maxPoints)
+	result, err := callGeminiGradeHomework(apiKey, fileBase64, questionFileBase64, title, subject, description, maxPoints)
 	if err != nil {
 		_ = db.Update("homework_submissions", url.Values{"id": {"eq." + submissionID}}, map[string]interface{}{
 			"ai_generated_by": "error", "ai_evaluated_at": time.Now().Format(time.RFC3339),
@@ -432,11 +491,21 @@ func evaluateSubmissionInBackground(db *supabase.Client, submissionID, fileBase6
 // data, not extracted/OCR'd text — Gemini reads the PDF's pages directly,
 // which also covers scanned/handwritten pages a text-only pipeline
 // couldn't) to Gemini alongside the assignment's own rubric, and asks for
-// strict JSON back via responseMimeType.
-func callGeminiGradeHomework(apiKey, fileBase64, title, subject, description string, maxPoints int) (*homeworkGradeResult, error) {
+// strict JSON back via responseMimeType. If the teacher attached the actual
+// question paper when assigning the homework, that PDF is sent too, so the
+// AI grades against the real questions instead of just the short text
+// description — meaningfully more accurate, especially for anything with
+// diagrams, specific numbers, or multi-part questions that a text
+// description wouldn't fully capture.
+func callGeminiGradeHomework(apiKey, fileBase64, questionFileBase64, title, subject, description string, maxPoints int) (*homeworkGradeResult, error) {
+	questionPaperNote := "No separate question paper was attached — grade against the instructions above only."
+	if questionFileBase64 != "" {
+		questionPaperNote = "The FIRST attached PDF is the actual question paper the teacher uploaded — treat it as the authoritative source of what was asked, more specific than the text instructions above. The SECOND attached PDF is the student's submitted answer — that's what you're grading."
+	}
+
 	instructions := fmt.Sprintf(
-		"You are grading a student's homework submission (attached as a PDF) for a school. "+
-			"Assignment: %q (subject: %s). Instructions given to the student: %q. Maximum score: %d.\n\n"+
+		"You are grading a student's homework submission for a school. "+
+			"Assignment: %q (subject: %s). Instructions given to the student: %q. Maximum score: %d. %s\n\n"+
 			"Read the submission and reply with ONLY a JSON object (no markdown fences, no commentary) matching exactly this shape:\n"+
 			"{\"suggestedScore\": <integer 0-%d>, \"feedback\": \"<2-4 sentences, addressed directly to the student, honest but encouraging>\", "+
 			"\"mistakes\": [{\"tag\": \"<3-6 word category, lowercase, e.g. 'sign error in algebra'>\", \"explanation\": \"<one sentence, specific to this submission>\"}], "+
@@ -445,15 +514,18 @@ func callGeminiGradeHomework(apiKey, fileBase64, title, subject, description str
 			"If the submission is empty, blank, or unreadable, suggestedScore must be 0 and feedback must say so plainly. "+
 			"Keep each mistake tag short and general enough that the same tag would apply if a different student made the identical error "+
 			"(a teacher aggregates these tags across the whole class to see what to re-teach).",
-		title, subject, description, maxPoints, maxPoints,
+		title, subject, description, maxPoints, questionPaperNote, maxPoints,
 	)
+
+	parts := []map[string]interface{}{{"text": instructions}}
+	if questionFileBase64 != "" {
+		parts = append(parts, map[string]interface{}{"inline_data": map[string]string{"mime_type": "application/pdf", "data": questionFileBase64}})
+	}
+	parts = append(parts, map[string]interface{}{"inline_data": map[string]string{"mime_type": "application/pdf", "data": fileBase64}})
 
 	payload, _ := json.Marshal(map[string]interface{}{
 		"contents": []map[string]interface{}{
-			{"parts": []map[string]interface{}{
-				{"text": instructions},
-				{"inline_data": map[string]string{"mime_type": "application/pdf", "data": fileBase64}},
-			}},
+			{"parts": parts},
 		},
 		"generationConfig": map[string]interface{}{
 			"maxOutputTokens":  700,

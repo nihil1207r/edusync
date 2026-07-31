@@ -62,6 +62,7 @@ func (d *Deps) RegisterRoutes(app *fiber.App) {
 	app.Post("/api/teacher/homework/grade", requireAuth("teacher"), d.GradeHomeworkSubmission)
 	app.Get("/api/teacher/homework/insight", requireAuth("teacher"), d.GetHomeworkClassInsight)
 	app.Get("/api/homework/submission-file", requireAuth(""), d.GetSubmissionFile)
+	app.Get("/api/homework/question-file", requireAuth(""), d.GetHomeworkQuestionFile)
 	app.Get("/api/student/homework/submission", requireAuth("student"), d.GetMyHomeworkSubmission)
 	app.Post("/api/gatepass", requireAuth("student"), d.PostGatepass)
 

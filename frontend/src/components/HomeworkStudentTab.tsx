@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "@/lib/api";
 import { Card, SectionTitle, Button, Pill, LoadingState } from "@/components/ui";
 import { fileToBase64 } from "@/lib/pdf";
+import QuestionPaperButton from "@/components/QuestionPaperButton";
 import type { Homework, MyHomeworkSubmission } from "@/lib/types";
 
 export default function HomeworkStudentTab({
@@ -48,6 +49,7 @@ export default function HomeworkStudentTab({
                       <p className="font-medium text-ink">{h.title}</p>
                       <p className="text-xs text-ink-soft">
                         {h.subject} · due {new Date(h.due_date).toLocaleString()} · {h.points} pts
+                        {h.question_file_name && " · 📄 question paper attached"}
                       </p>
                     </div>
                     {done ? (
@@ -142,6 +144,11 @@ function HomeworkDetail({
         {homework.subject} · due {new Date(homework.due_date).toLocaleString()} · {homework.points} pts
       </p>
       {homework.description && <p className="text-sm text-ink-soft mt-3">{homework.description}</p>}
+      {homework.question_file_name && (
+        <div className="mt-3">
+          <QuestionPaperButton homeworkId={homework.id} fileName={homework.question_file_name} />
+        </div>
+      )}
 
       {earned !== null && <p className="text-sm text-leaf mt-3">+{earned} points earned!</p>}
 

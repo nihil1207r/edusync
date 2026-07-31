@@ -29,7 +29,7 @@ func (d *Deps) StudentDashboard(c *fiber.Ctx) error {
 	_ = d.UserDB(c).Select("grades", url.Values{"select": {"*"}, "student_id": {"eq." + childID}}, &grades)
 	_ = d.UserDB(c).Select("attendance", url.Values{"select": {"*"}, "student_id": {"eq." + childID}, "order": {"date.desc"}, "limit": {"7"}}, &attendance)
 	_ = d.UserDB(c).SelectOne("students", url.Values{"select": {"*"}, "id": {"eq." + childID}}, &student)
-	_ = d.UserDB(c).Select("homework", url.Values{"select": {"*"}, "class": {"eq." + toStr(student["class"])}, "order": {"due_date.asc"}}, &homework)
+	_ = d.UserDB(c).Select("homework", url.Values{"select": {homeworkSummaryColumns}, "class": {"eq." + toStr(student["class"])}, "order": {"due_date.asc"}}, &homework)
 	_ = d.UserDB(c).Select("announcements", url.Values{"select": {"*"}, "order": {"created_at.desc"}, "limit": {"5"}}, &announcements)
 	_ = d.UserDB(c).Select("homework_submissions", url.Values{"select": {"homework_id"}, "student_id": {"eq." + childID}}, &submissions)
 
